@@ -162,15 +162,65 @@ function getCountryISO3(country) {
 
 function getCountryBiome(country) {
   const countryName = country.properties?.name;
+  const continent = continentByCountryId.get(country.id);
   
-  // TUNDRA COUNTRIES - Force them to be visible
-  const tundraCountries = ['Russia', 'Canada', 'Norway', 'Sweden', 'Finland', 'Iceland'];
-  if (tundraCountries.includes(countryName)) {
-    console.log(`Tundra country found: ${countryName}`);
-    return 'tundra';
-  }
+  // Extreme biomes that override everything
+  if (countryName === 'Greenland') return 'ice';
+  if (countryName === 'Antarctica') return 'ice';
+  if (countryName === 'Iceland') return 'tundra';
   
-  // For now, return forest for everything else
+  // Desert countries
+  const desertCountries = ['Saudi Arabia', 'Egypt', 'Libya', 'Algeria', 'Australia', 'United Arab Emirates', 
+                          'Oman', 'Yemen', 'Kuwait', 'Qatar', 'Bahrain', 'Mauritania', 'Niger', 'Chad', 
+                          'Sudan', 'Mali', 'Western Sahara', 'Jordan', 'Israel', 'Iraq', 'Iran', 'Pakistan',
+                          'Afghanistan', 'Turkmenistan', 'Uzbekistan', 'Kazakhstan', 'Mongolia'];
+  if (desertCountries.includes(countryName)) return 'desert';
+  
+  // Central African rainforest belt
+  const rainforestCountries = ['Brazil', 'Colombia', 'Indonesia', 'Malaysia', 'Democratic Republic of the Congo', 
+                              'Peru', 'Venezuela', 'Ecuador', 'Republic of the Congo', 'Gabon', 'Cameroon', 
+                              'Central African Republic', 'Equatorial Guinea', 'Ghana', 'Ivory Coast', 'Liberia', 
+                              'Sierra Leone', 'Guinea', 'Nigeria', 'Uganda', 'Rwanda', 'Burundi', 'Tanzania',
+                              'Papua New Guinea', 'Philippines', 'Vietnam', 'Cambodia', 'Laos', 'Thailand',
+                              'Myanmar', 'Sri Lanka', 'Bangladesh'];
+  if (rainforestCountries.includes(countryName)) return 'rainforest';
+  
+  // Tundra/Arctic countries
+  const tundraCountries = ['Russia', 'Canada', 'Norway', 'Sweden', 'Finland'];
+  if (tundraCountries.includes(countryName)) return 'tundra';
+  
+  // Mountain countries
+  const mountainCountries = ['Nepal', 'Bhutan', 'Switzerland', 'Austria', 'Bolivia'];
+  if (mountainCountries.includes(countryName)) return 'mountain';
+  
+  // Mediterranean countries
+  const mediterraneanCountries = ['Spain', 'Italy', 'Greece', 'Turkey', 'Portugal', 'Israel', 'Lebanon', 
+                                 'Morocco', 'Tunisia', 'Algeria', 'Syria', 'Jordan', 'Cyprus', 'Malta',
+                                 'Croatia', 'Albania', 'Montenegro'];
+  if (mediterraneanCountries.includes(countryName)) return 'mediterranean';
+  
+  // Grassland/Savanna countries
+  const grasslandCountries = ['Argentina', 'South Africa', 'Kenya', 'Zambia', 'Zimbabwe', 'Botswana', 
+                             'Namibia', 'Mozambique', 'Madagascar', 'Malawi', 'Angola', 'Ethiopia',
+                             'Somalia', 'Eritrea', 'Djibouti', 'Paraguay', 'Uruguay'];
+  if (grasslandCountries.includes(countryName)) return 'grassland';
+  
+  // Default forest countries (temperate regions)
+  const forestCountries = ['United States', 'China', 'Japan', 'South Korea', 'North Korea', 'France', 
+                          'Germany', 'United Kingdom', 'Poland', 'Ukraine', 'Belarus', 'Romania',
+                          'Bulgaria', 'Serbia', 'Hungary', 'Czech Republic', 'Slovakia', 'Austria',
+                          'Switzerland', 'Chile', 'New Zealand'];
+  if (forestCountries.includes(countryName)) return 'forest';
+  
+  // Continent-based fallbacks
+  if (continent === 'Europe') return 'forest';
+  if (continent === 'North America') return 'forest';
+  if (continent === 'Asia') return 'forest';
+  if (continent === 'Africa') return 'grassland';
+  if (continent === 'South America') return 'rainforest';
+  if (continent === 'Oceania') return 'desert';
+  if (continent === 'Antarctica') return 'ice';
+  
   return 'forest';
 }
 function assignContinents() {
@@ -281,19 +331,6 @@ function renderMap() {
   svg.call(zoomBehavior.transform, currentTransform);
   updateContinentLayerState();
   updateCountryLayerState();
-  // DEBUG: Check if tundra countries are getting the right biome
-setTimeout(() => {
-  const tundraCountries = ['Russia', 'Canada', 'Norway', 'Sweden', 'Finland'];
-  d3.selectAll('.country').each(function(d) {
-    const name = d.properties?.name;
-    if (tundraCountries.includes(name)) {
-      const biome = d3.select(this).attr('data-biome');
-      console.log(`Country: ${name}, Biome: ${biome}`);
-      // Force the color
-      d3.select(this).style('fill', '#ff0000');
-    }
-  });
-}, 2000);
 }
 
 function handleMouseMove(event, feature) {
@@ -1011,27 +1048,5 @@ async function boot() {
     handleInitError(err);
   }
 }
-// Simple debug - run this after the map loads
-setTimeout(() => {
-  console.log("=== DEBUG: Checking countries ===");
-  
-  // Get all country paths
-  const countries = d3.selectAll('.country');
-  console.log(`Total countries: ${countries.size()}`);
-  
-  // Check a few specific countries
-  const testCountries = ['Russia', 'Canada', 'Norway', 'Sweden', 'Finland'];
-  
-  countries.each(function(d) {
-    const name = d.properties?.name;
-    if (testCountries.includes(name)) {
-      console.log(`Found: ${name}`);
-      // Force it to be red
-      d3.select(this).style('fill', 'red');
-      console.log(` - Set ${name} to red`);
-    }
-  });
-  
-  console.log("=== DEBUG END ===");
-}, 3000);
+
 boot();
