@@ -1,0 +1,11 @@
+body { font-family: system-ui, Arial, sans-serif; margin: 24px; background:#f6f8fa; }
+h1 { margin-top:0 }
+.muted { color:#666; font-size:13px; }
+.layout { display:flex; gap:24px; align-items:flex-start; }
+#panel { background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.08); width:320px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2ff; margin-left:6px; font-size:12px; }
+.country { fill:#e6eef6; stroke:#8aa6bf; stroke-width:0.5; cursor:pointer; }
+.country:hover { fill:#d5e6ff; }
+.selectedA { fill:#c7ffd4 !important; }
+.selectedB { fill:#ffd6c7 !important; }
+
