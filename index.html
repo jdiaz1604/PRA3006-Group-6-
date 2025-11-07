@@ -1,11 +1,394 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Genetic Map Test</title>
+  <meta charset="utf-8" />
+  <title>Demonstrating the correlation between endangered species and the economic growth of countries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0b1020; --ink:#f2f4f8; --accent:#6fb1ff; --muted:#a8b3c7; --panel:#121831; }
+    html,body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; }
+    header { padding:18px 24px; border-bottom:1px solid #1e2748; }
+    h1 { margin:0; font-size:18px; line-height:1.3; }
+    .app { display:grid; grid-template-columns: 1.2fr 0.8fr; gap:0; min-height:calc(100% - 64px); }
+    .map-wrap { position:relative; }
+    .map { width:100%; height:100%; }
+    .sidebar { background:var(--panel); border-left:1px solid #1e2748; padding:18px; overflow:auto; }
+    .sidebar h2 { font-size:16px; margin:0 0 8px; }
+    .sidebar .small { color:var(--muted); font-size:12px; }
+    .metric { margin:14px 0; }
+    .metric-label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    .metric-value { font-size:20px; margin-top:4px; }
+    .loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; background:transparent; }
+    .spinner { width:42px; height:42px; border:4px solid #33406a; border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+    .tooltip { position:absolute; pointer-events:none; background:#0e1530; color:var(--ink); padding:6px 8px; border:1px solid #1f2a50; border-radius:6px; font-size:12px; box-shadow:0 6px 20px rgba(0,0,0,.25); opacity:0; transition:opacity .15s; }
+    .note { margin-top:10px; color:var(--muted); font-size:12px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .legend { margin:10px 0 2px; font-size:12px; color:var(--muted); }
+    .attribution { margin-top:14px; font-size:11px; color:var(--muted); }
+    a, a:visited { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+  </style>
 </head>
 <body>
-  <h1>Hello Juan</h1>
-  <p>If you see this, your GitHub Pages site is working!</p>
+  <header>
+    <h1>Highlighting the correlation between endangered species and the economic growth of countries</h1>
+  </header>
+
+  <div class="app">
+    <div class="map-wrap">
+      <svg class="map"></svg>
+      <div class="loading" id="loading" aria-hidden="true" style="display:none;"><div class="spinner"></div></div>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+    <aside class="sidebar">
+      <h2 id="country-title">Click a country</h2>
+      <div class="small">The panel will show:
+        <ul>
+          <li>Total endemic species</li>
+          <li>Endangered endemic species</li>
+          <li>Latest nominal GDP (USD)</li>
+          <li>Latest population</li>
+        </ul>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Total endemic species</div>
+        <div class="metric-value" id="totalEndemic">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Endangered endemic species</div>
+        <div class="metric-value" id="endangeredEndemic">—</div>
+      </div>
+
+      <div id="chart" style="margin:10px 0 6px;"></div>
+      <div class="legend">Bar chart: endemic vs. endangered endemic</div>
+
+      <div class="metric" style="margin-top:18px;">
+        <div class="metric-label">Latest nominal GDP (USD)</div>
+        <div class="metric-value" id="gdp">—</div>
+        <div class="small" id="gdpYear"></div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Latest population</div>
+        <div class="metric-value" id="population">—</div>
+        <div class="small" id="popYear"></div>
+      </div>
+
+      <div class="note">Data source: Wikidata Query Service (live).</div>
+      <div class="attribution">Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a>.</div>
+    </aside>
+  </div>
+
+  <!-- D3 + TopoJSON + world topo -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+  <script>
+    // --- Config
+    const WDQS = 'https://query.wikidata.org/sparql';
+    const HEADERS = { 'Accept': 'application/sparql-results+json' };
+    const worldUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+
+    const fmtInt = d3.format(',d');
+    const fmtMoney = d3.format('~s'); // for compact GDP (e.g., 1.2G, 350M)
+
+    const $loading = document.getElementById('loading');
+    const $tooltip = document.getElementById('tooltip');
+
+    // --- Map init
+    const svg = d3.select('.map');
+    const mapWrap = document.querySelector('.map-wrap');
+
+    function resize() {
+      const w = mapWrap.clientWidth;
+      const h = Math.max(420, window.innerHeight - 80);
+      svg.attr('width', w).attr('height', h);
+      return { w, h };
+    }
+
+    async function drawMap() {
+      const { w, h } = resize();
+      const world = await d3.json(worldUrl);
+      const countries = topojson.feature(world, world.objects.countries).features;
+
+      const projection = d3.geoMercator().fitExtent([[10, 10], [w-10, h-10]], { type:'Sphere' });
+      const path = d3.geoPath().projection(projection);
+
+      svg.append('path')
+        .attr('d', path({ type: 'Sphere' }))
+        .attr('fill', '#0a1029')
+        .attr('stroke', '#1b2551')
+        .attr('stroke-width', 1);
+
+      svg.append('g')
+        .attr('fill', '#162145')
+        .attr('stroke', '#223064')
+        .attr('stroke-width', 0.7)
+        .selectAll('path')
+        .data(countries)
+        .join('path')
+        .attr('d', path)
+        .on('mousemove', (event, d) => {
+          const name = countryNameFromTopo(d);
+          const code = d.id;
+          $tooltip.style.opacity = 1;
+          $tooltip.style.left = (event.offsetX + 14) + 'px';
+          $tooltip.style.top = (event.offsetY + 14) + 'px';
+          $tooltip.textContent = name ? `${name}` : `ISO numeric: ${code}`;
+        })
+        .on('mouseleave', () => { $tooltip.style.opacity = 0; })
+        .on('click', (event, d) => handleCountryClick(d));
+
+      // borders
+      svg.append('path')
+        .attr('fill', 'none')
+        .attr('stroke', '#0f1738')
+        .attr('stroke-width', 0.6)
+        .attr('d', path(topojson.mesh(world, world.objects.countries, (a, b) => a !== b)));
+
+      window.addEventListener('resize', () => {
+        svg.selectAll('*').remove();
+        drawMap();
+      }, { passive:true, once:true });
+    }
+
+    function countryNameFromTopo(feature) {
+      // world-atlas countries-110m has limited properties; many builds omit names.
+      // We'll try a few likely fields; otherwise leave undefined.
+      const p = feature.properties || {};
+      return p.name || p.admin || p.sovereignt || p.brk_name || null;
+    }
+
+    async function handleCountryClick(feature) {
+      const isoNumeric = feature.id; // world-atlas uses ISO-3166 numeric code as id
+      showLoading(true);
+      clearPanel();
+
+      try {
+        const qid = await fetchQIDByIsoNumeric(isoNumeric);
+        if (!qid) {
+          setTitle(`Unknown country (ISO numeric ${isoNumeric})`);
+          throw new Error('Could not resolve Wikidata QID from ISO numeric code.');
+        }
+        const label = await fetchCountryLabel(qid);
+        setTitle(label || qid);
+
+        // run three queries in parallel
+        const [endemic, gdp, pop] = await Promise.allSettled([
+          queryEndemicForCountry(qid),
+          queryGdpForCountry(qid),
+          queryPopulationForCountry(qid)
+        ]);
+
+        if (endemic.status === 'fulfilled') {
+          const { totalEndemicSpecies, endangeredEndemicSpecies } = endemic.value;
+          setEndemic(totalEndemicSpecies, endangeredEndemicSpecies);
+          drawEndemicChart(totalEndemicSpecies, endangeredEndemicSpecies);
+        } else {
+          setEndemic(null, null, endemic.reason?.message);
+        }
+
+        if (gdp.status === 'fulfilled') {
+          setGDP(gdp.value.gdpUSD, gdp.value.gdpYear);
+        } else {
+          setGDP(null, null, gdp.reason?.message);
+        }
+
+        if (pop.status === 'fulfilled') {
+          setPopulation(pop.value.population, pop.value.popYear);
+        } else {
+          setPopulation(null, null, pop.reason?.message);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    
+
+    // --- Your three queries, adapted to a single chosen country (VALUES wd:Qxxx)
+    async function queryEndemicForCountry(qid) {
+      const query = `
+      #title: Endemic & Endangered Endemic Species for ${qid}
+      SELECT
+        (COALESCE(?allSpecies, 0) AS ?totalEndemicSpecies)
+        (COALESCE(?endangeredSpecies, 0) AS ?endangeredEndemicSpecies)
+      WHERE {
+        VALUES ?country { wd:${qid} }
+
+        OPTIONAL {
+          SELECT ?country (COUNT(DISTINCT ?sp) AS ?allSpecies)
+          WHERE {
+            ?sp wdt:P31 wd:Q16521 ;
+                wdt:P105 wd:Q7432 ;
+                wdt:P183 ?country .
+          }
+          GROUP BY ?country
+        }
+
+        OPTIONAL {
+          SELECT ?country (COUNT(DISTINCT ?sp2) AS ?endangeredSpecies)
+          WHERE {
+            ?sp2 wdt:P31  wd:Q16521 ;
+                 wdt:P105 wd:Q7432 ;
+                 wdt:P141 wd:Q96377276 ;
+                 wdt:P183 ?country .
+          }
+          GROUP BY ?country
+        }
+      }`;
+      const data = await runSparql(query);
+      const row = data.results.bindings[0] || {};
+      return {
+        totalEndemicSpecies: +(row.totalEndemicSpecies?.value || 0),
+        endangeredEndemicSpecies: +(row.endangeredEndemicSpecies?.value || 0)
+      };
+    }
+
+    async function queryGdpForCountry(qid) {
+      const query = `
+      #title: Latest Nominal GDP (USD) for ${qid}
+      SELECT ?gdpUSD ?gdpYear WHERE {
+        VALUES ?country { wd:${qid} }
+
+        {
+          SELECT ?country (MAX(?date) AS ?latestDate)
+          WHERE {
+            ?country p:P2131 ?st .
+            ?st pq:P585 ?date .
+          }
+          GROUP BY ?country
+        }
+
+        ?country p:P2131 ?st2 .
+        ?st2 pq:P585 ?latestDate ;
+             ps:P2131 ?gdpUSD .
+        BIND(YEAR(?latestDate) AS ?gdpYear)
+      } LIMIT 1`;
+      const data = await runSparql(query);
+      const row = data.results.bindings[0];
+      return {
+        gdpUSD: row ? +row.gdpUSD.value : null,
+        gdpYear: row ? row.gdpYear.value : null
+      };
+    }
+
+    async function queryPopulationForCountry(qid) {
+      const query = `
+      #title: Latest Population for ${qid}
+      SELECT ?population ?popYear WHERE {
+        VALUES ?country { wd:${qid} }
+
+        {
+          SELECT ?country (MAX(?date) AS ?latestDate)
+          WHERE {
+            ?country p:P1082 ?popStmt .
+            ?popStmt pq:P585 ?date .
+          }
+          GROUP BY ?country
+        }
+
+        ?country p:P1082 ?popStmt2 .
+        ?popStmt2 pq:P585 ?latestDate ;
+                  ps:P1082 ?population .
+        BIND(YEAR(?latestDate) AS ?popYear)
+      } LIMIT 1`;
+      const data = await runSparql(query);
+      const row = data.results.bindings[0];
+      return {
+        population: row ? +row.population.value : null,
+        popYear: row ? row.popYear.value : null
+      };
+    }
+
+    // --- UI helpers
+    function showLoading(on) {
+      $loading.style.display = on ? 'flex' : 'none';
+      $loading.setAttribute('aria-hidden', on ? 'false' : 'true');
+    }
+
+    function setTitle(text) {
+      document.getElementById('country-title').textContent = text || 'Click a country';
+    }
+
+    function clearPanel() {
+      setEndemic(null, null);
+      setGDP(null, null);
+      setPopulation(null, null);
+      drawEndemicChart(0, 0);
+    }
+
+    function setEndemic(total, endangered, err) {
+      const totalEl = document.getElementById('totalEndemic');
+      const endEl = document.getElementById('endangeredEndemic');
+      if (err) {
+        totalEl.textContent = 'Error';
+        endEl.textContent = 'Error';
+        return;
+      }
+      totalEl.textContent = (total ?? '—') === '—' ? '—' : fmtInt(total);
+      endEl.textContent = (endangered ?? '—') === '—' ? '—' : fmtInt(endangered);
+    }
+
+    function setGDP(value, year, err) {
+      const g = document.getElementById('gdp');
+      const gy = document.getElementById('gdpYear');
+      if (err) { g.textContent = 'Error'; gy.textContent=''; return; }
+      if (value == null) { g.textContent = '—'; gy.textContent=''; return; }
+      g.textContent = `${fmtMoney(value)} USD`;
+      gy.textContent = year ? `Year: ${year}` : '';
+    }
+
+    function setPopulation(value, year, err) {
+      const p = document.getElementById('population');
+      const py = document.getElementById('popYear');
+      if (err) { p.textContent = 'Error'; py.textContent=''; return; }
+      if (value == null) { p.textContent = '—'; py.textContent=''; return; }
+      p.textContent = fmtInt(value);
+      py.textContent = year ? `Year: ${year}` : '';
+    }
+
+    function drawEndemicChart(total, endangered) {
+      const cont = d3.select('#chart');
+      cont.selectAll('*').remove();
+      const W = 300, H = 160, M = { t:10, r:12, b:26, l:42 };
+      const data = [
+        { k: 'Endemic', v: +total || 0 },
+        { k: 'Endangered endemic', v: +endangered || 0 }
+      ];
+      const svgC = cont.append('svg').attr('width', W).attr('height', H);
+      const x = d3.scaleBand().domain(data.map(d=>d.k)).range([M.l, W - M.r]).padding(0.35);
+      const y = d3.scaleLinear().domain([0, d3.max(data, d=>d.v)||1]).nice().range([H - M.b, M.t]);
+
+      svgC.append('g')
+        .selectAll('rect')
+        .data(data)
+        .join('rect')
+        .attr('x', d=>x(d.k))
+        .attr('y', d=>y(d.v))
+        .attr('width', x.bandwidth())
+        .attr('height', d=>y(0) - y(d.v))
+        .attr('fill', (d,i)=> i===0 ? '#6fb1ff' : '#9ad98b');
+
+      const ax = d3.axisBottom(x);
+      const ay = d3.axisLeft(y).ticks(5).tickFormat(d3.format('.2s'));
+
+      svgC.append('g').attr('transform', `translate(0,${H - M.b})`).call(ax)
+        .selectAll('text').style('fill','#a8b3c7').style('font-size','11px');
+      svgC.append('g').attr('transform', `translate(${M.l},0)`).call(ay)
+        .call(g=>g.selectAll('text').style('fill','#a8b3c7').style('font-size','11px'))
+        .call(g=>g.selectAll('line,path').attr('stroke','#2a3666'));
+    }
+
+    // Kickoff
+    (async function init() {
+      await drawMap();
+      // Optional: default to a known country on load (e.g., Netherlands ISO numeric 528)
+      // simulate click by directly calling handler with a stub having id=528
+      // handleCountryClick({ id: 528, properties: { name: 'Netherlands' } });
+    })();
+  </script>
 </body>
 </html>
