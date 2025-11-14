@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Demonstrating the correlation between endangered species and the economic growth of countries</title>
+  <title>Highlighting the correlation between endangered species and the country socioeconomic profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root { --bg:#0b1020; --ink:#f2f4f8; --accent:#6fb1ff; --muted:#a8b3c7; --panel:#121831; }
@@ -27,6 +27,8 @@
     .attribution { margin-top:14px; font-size:11px; color:var(--muted); }
     a, a:visited { color:var(--accent); text-decoration:none; }
     a:hover { text-decoration:underline; }
+    .status { font-size:12px; color:var(--muted); margin-top:4px; }
+    .err { color:#ff9aa2; }
   </style>
 </head>
 <body>
@@ -54,6 +56,7 @@
       <div class="metric">
         <div class="metric-label">Total endemic species</div>
         <div class="metric-value" id="totalEndemic">—</div>
+        <div class="status" id="endemicStatus"></div>
       </div>
       <div class="metric">
         <div class="metric-label">Endangered endemic species</div>
@@ -67,35 +70,42 @@
         <div class="metric-label">Latest nominal GDP (USD)</div>
         <div class="metric-value" id="gdp">—</div>
         <div class="small" id="gdpYear"></div>
+        <div class="status" id="gdpStatus"></div>
       </div>
 
       <div class="metric">
         <div class="metric-label">Latest population</div>
         <div class="metric-value" id="population">—</div>
         <div class="small" id="popYear"></div>
+        <div class="status" id="popStatus"></div>
       </div>
 
-      <div class="note">Data source: Wikidata Query Service (live).</div>
+      <div class="note">Data source: QLever Wikidata (live). Served once, filtered client-side per click.</div>
       <div class="attribution">Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a>.</div>
     </aside>
   </div>
 
-  <!-- D3 + TopoJSON + world topo -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
   <script>
-    // --- Config
-    const WDQS = 'https://query.wikidata.org/sparql';
-    const HEADERS = { 'Accept': 'application/sparql-results+json' };
+    // QLever endpoint (GET ?query=...)
+    const QLEVER = 'https://qlever.dev/api/wikidata';
+    const ACCEPT_JSON = { 'Accept': 'application/sparql-results+json' };
     const worldUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 
     const fmtInt = d3.format(',d');
-    const fmtMoney = d3.format('~s'); // for compact GDP (e.g., 1.2G, 350M)
+    const fmtMoney = d3.format('~s');
 
     const $loading = document.getElementById('loading');
     const $tooltip = document.getElementById('tooltip');
 
-    // --- Map init
+    // Global caches: whole tables keyed by ISO numeric (int)
+    let endemicTable = null;     // Map<int, {countryLabel, iso3, isoNum(str), totalEndemicSpecies, endangeredEndemicSpecies}>
+    let gdpTable = null;         // Map<int, {gdpUSD, gdpYear, countryLabel, ...}>
+    let populationTable = null;  // Map<int, {population, popYear, countryLabel, ...}>
+    let preloadError = null;
+
+    // Map init
     const svg = d3.select('.map');
     const mapWrap = document.querySelector('.map-wrap');
 
@@ -129,17 +139,16 @@
         .join('path')
         .attr('d', path)
         .on('mousemove', (event, d) => {
-          const name = countryNameFromTopo(d);
-          const code = d.id;
+          const p = d.properties || {};
+          const name = p.name || p.admin || p.sovereignt || p.brk_name || null;
           $tooltip.style.opacity = 1;
           $tooltip.style.left = (event.offsetX + 14) + 'px';
           $tooltip.style.top = (event.offsetY + 14) + 'px';
-          $tooltip.textContent = name ? `${name}` : `ISO numeric: ${code}`;
+          $tooltip.textContent = name ? `${name}` : `ISO numeric: ${d.id}`;
         })
         .on('mouseleave', () => { $tooltip.style.opacity = 0; })
         .on('click', (event, d) => handleCountryClick(d));
 
-      // borders
       svg.append('path')
         .attr('fill', 'none')
         .attr('stroke', '#0f1738')
@@ -152,158 +161,324 @@
       }, { passive:true, once:true });
     }
 
-    function countryNameFromTopo(feature) {
-      // world-atlas countries-110m has limited properties; many builds omit names.
-      // We'll try a few likely fields; otherwise leave undefined.
-      const p = feature.properties || {};
-      return p.name || p.admin || p.sovereignt || p.brk_name || null;
+    // ---------- QLever GET runner + retry/backoff ----------
+    async function runSparqlGETWithRetry(query, { retries = 3, baseDelayMs = 400 } = {}) {
+      let attempt = 0;
+      while (true) {
+        try {
+          const url = QLEVER + '?query=' + encodeURIComponent(query);
+          const res = await fetch(url, { method: 'GET', headers: ACCEPT_JSON });
+          if (!res.ok) {
+            if ((res.status === 429 || res.status === 403 || res.status === 503) && attempt < retries) {
+              attempt++;
+              await delayWithJitter(baseDelayMs, attempt);
+              continue;
+            }
+            throw new Error(`QLever error ${res.status}`);
+          }
+          return await res.json();
+        } catch (e) {
+          if (attempt < retries) {
+            attempt++;
+            await delayWithJitter(baseDelayMs, attempt);
+            continue;
+          }
+          throw e;
+        }
+      }
     }
 
+    function delayWithJitter(base, attempt) {
+      const jitter = Math.random() * 400;
+      const wait = Math.min(800, base * attempt) + jitter;
+      return new Promise(r => setTimeout(r, wait));
+    }
+
+    // ---------- EXACT QUERIES (as you provided) ----------
+    const Q_END_EMD = `
+PREFIX wd:   <http://www.wikidata.org/entity/>
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT
+  ?country
+  ?countryLabel
+  ?iso3
+  ?isoNum
+  (COALESCE(?allSpecies, 0)        AS ?totalEndemicSpecies)
+  (COALESCE(?endangeredSpecies, 0) AS ?endangeredEndemicSpecies)
+WHERE {
+  ?country wdt:P31 wd:Q6256 .                # country
+  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
+  OPTIONAL { ?country wdt:P298 ?iso3 }       # ISO 3166-1 alpha-3
+  OPTIONAL { ?country wdt:P299 ?isoNum }     # ISO 3166-1 numeric (string in WD)
+
+  # Total endemic species (rank = species)
+  OPTIONAL {
+    SELECT ?country (COUNT(DISTINCT ?sp) AS ?allSpecies)
+    WHERE {
+      ?sp wdt:P31 wd:Q16521 ;               # taxon
+          wdt:P105 wd:Q7432 ;               # rank = species
+          wdt:P183 ?country .               # endemic to (country)
+      ?country wdt:P31 wd:Q6256 .
+    }
+    GROUP BY ?country
+  }
+
+  # Endangered endemic species (IUCN Endangered)
+  OPTIONAL {
+    SELECT ?country (COUNT(DISTINCT ?sp2) AS ?endangeredSpecies)
+    WHERE {
+      ?sp2 wdt:P31  wd:Q16521 ;
+           wdt:P105 wd:Q7432 ;
+           wdt:P141 wd:Q96377276 ;          # conservation status = Endangered
+           wdt:P183 ?country .
+      ?country wdt:P31 wd:Q6256 .
+    }
+    GROUP BY ?country
+  }
+}
+ORDER BY DESC(?totalEndemicSpecies)
+`;
+
+    const Q_GDP = `
+PREFIX wd:   <http://www.wikidata.org/entity/>
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
+PREFIX p:    <http://www.wikidata.org/prop/>
+PREFIX ps:   <http://www.wikidata.org/prop/statement/>
+PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT
+  ?country
+  ?countryLabel
+  ?iso3
+  ?isoNum
+  ?gdpUSD
+  ?gdpYear
+WHERE {
+  ?country wdt:P31 wd:Q6256 .
+  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
+  OPTIONAL { ?country wdt:P298 ?iso3 }
+  OPTIONAL { ?country wdt:P299 ?isoNum }
+
+  # Find latest GDP date per country
+  {
+    SELECT ?country (MAX(?date) AS ?latestDate)
+    WHERE {
+      ?country wdt:P31 wd:Q6256 ;
+               p:P2131 ?st .                # nominal GDP
+      ?st pq:P585 ?date .                   # point in time
+    }
+    GROUP BY ?country
+  }
+
+  # Pull GDP value for that latest date
+  ?country p:P2131 ?st2 .
+  ?st2 pq:P585 ?latestDate ;
+       ps:P2131 ?gdpUSD .
+  BIND(YEAR(?latestDate) AS ?gdpYear)
+}
+ORDER BY DESC(?gdpUSD)
+`;
+
+    const Q_POP = `
+PREFIX wd:   <http://www.wikidata.org/entity/>
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
+PREFIX p:    <http://www.wikidata.org/prop/>
+PREFIX ps:   <http://www.wikidata.org/prop/statement/>
+PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT
+  ?country
+  ?countryLabel
+  ?iso3
+  ?isoNum
+  ?population
+  ?popYear
+WHERE {
+  ?country wdt:P31 wd:Q6256 .
+  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
+  OPTIONAL { ?country wdt:P298 ?iso3 }
+  OPTIONAL { ?country wdt:P299 ?isoNum }
+
+  # Find latest population date per country
+  {
+    SELECT ?country (MAX(?date) AS ?latestDate)
+    WHERE {
+      ?country wdt:P31 wd:Q6256 ;
+               p:P1082 ?popStmt .           # population
+      ?popStmt pq:P585 ?date .              # point in time
+    }
+    GROUP BY ?country
+  }
+
+  # Pull population value for that latest date
+  ?country p:P1082 ?popStmt2 .
+  ?popStmt2 pq:P585 ?latestDate ;
+            ps:P1082 ?population .
+  BIND(YEAR(?latestDate) AS ?popYear)
+}
+ORDER BY DESC(?population)
+`;
+
+    // ---------- Preload: run the 3 queries once, build fast lookup maps ----------
+    async function preloadAllTables() {
+      // sequential + retry/backoff
+      const endData = await runSparqlGETWithRetry(Q_END_EMD);
+      endemicTable = buildEndemicMap(endData);
+
+      const gdpData = await runSparqlGETWithRetry(Q_GDP);
+      gdpTable = buildGdpMap(gdpData);
+
+      const popData = await runSparqlGETWithRetry(Q_POP);
+      populationTable = buildPopulationMap(popData);
+    }
+
+    function buildEndemicMap(json) {
+      const m = new Map();
+      const rows = json?.results?.bindings || [];
+      for (const r of rows) {
+        const isoNumStr = r.isoNum?.value;
+        const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
+        if (!Number.isFinite(isoInt)) continue;
+        m.set(isoInt, {
+          countryLabel: r.countryLabel?.value || '',
+          iso3: r.iso3?.value || '',
+          isoNum: isoNumStr,
+          totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),
+          endangeredEndemicSpecies: +(r.endangeredEndemicSpecies?.value || 0)
+        });
+      }
+      return m;
+    }
+
+    function buildGdpMap(json) {
+      const m = new Map();
+      const rows = json?.results?.bindings || [];
+      for (const r of rows) {
+        const isoNumStr = r.isoNum?.value;
+        const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
+        if (!Number.isFinite(isoInt)) continue;
+        m.set(isoInt, {
+          countryLabel: r.countryLabel?.value || '',
+          iso3: r.iso3?.value || '',
+          isoNum: isoNumStr,
+          gdpUSD: +(r.gdpUSD?.value || 0),
+          gdpYear: r.gdpYear?.value || ''
+        });
+      }
+      return m;
+    }
+
+    function buildPopulationMap(json) {
+      const m = new Map();
+      const rows = json?.results?.bindings || [];
+      for (const r of rows) {
+        const isoNumStr = r.isoNum?.value;
+        const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
+        if (!Number.isFinite(isoInt)) continue;
+        m.set(isoInt, {
+          countryLabel: r.countryLabel?.value || '',
+          iso3: r.iso3?.value || '',
+          isoNum: isoNumStr,
+          population: +(r.population?.value || 0),
+          popYear: r.popYear?.value || ''
+        });
+      }
+      return m;
+    }
+
+    // ---------- Click handling ----------
+    let inFlight = false;
+
     async function handleCountryClick(feature) {
-      const isoNumeric = feature.id; // world-atlas uses ISO-3166 numeric code as id
+      if (inFlight) return;
+      inFlight = true;
+
+      const isoNumeric = parseInt(feature.id, 10);
       showLoading(true);
       clearPanel();
 
       try {
-        const qid = await fetchQIDByIsoNumeric(isoNumeric);
-        if (!qid) {
-          setTitle(`Unknown country (ISO numeric ${isoNumeric})`);
-          throw new Error('Could not resolve Wikidata QID from ISO numeric code.');
+        // Ensure preload happened
+        if (!endemicTable || !gdpTable || !populationTable) {
+          try {
+            await preloadAllTables();
+          } catch (e) {
+            console.error(e);
+            preloadError = e;
+          }
         }
-        const label = await fetchCountryLabel(qid);
-        setTitle(label || qid);
 
-        // run three queries in parallel
-        const [endemic, gdp, pop] = await Promise.allSettled([
-          queryEndemicForCountry(qid),
-          queryGdpForCountry(qid),
-          queryPopulationForCountry(qid)
-        ]);
+        // Title: prefer label from any table, else fallback to topo name
+        const topoName = (feature.properties||{}).name || feature.properties?.admin || feature.properties?.sovereignt || feature.properties?.brk_name || '';
+        const lbl = endemicTable?.get(isoNumeric)?.countryLabel
+                 || gdpTable?.get(isoNumeric)?.countryLabel
+                 || populationTable?.get(isoNumeric)?.countryLabel
+                 || topoName
+                 || `ISO numeric ${isoNumeric}`;
+        setTitle(lbl);
 
-        if (endemic.status === 'fulfilled') {
-          const { totalEndemicSpecies, endangeredEndemicSpecies } = endemic.value;
-          setEndemic(totalEndemicSpecies, endangeredEndemicSpecies);
-          drawEndemicChart(totalEndemicSpecies, endangeredEndemicSpecies);
+        // Endemic
+        if (preloadError) {
+          applyEndemicResult({ status: 'error' });
         } else {
-          setEndemic(null, null, endemic.reason?.message);
+          const row = endemicTable?.get(isoNumeric);
+          if (row) {
+            applyEndemicResult({
+              status: 'ok',
+              totalEndemicSpecies: row.totalEndemicSpecies,
+              endangeredEndemicSpecies: row.endangeredEndemicSpecies
+            });
+          } else {
+            applyEndemicResult({ status: 'empty' });
+          }
         }
 
-        if (gdp.status === 'fulfilled') {
-          setGDP(gdp.value.gdpUSD, gdp.value.gdpYear);
+        // GDP
+        if (preloadError) {
+          applyGdpResult({ status: 'error' });
         } else {
-          setGDP(null, null, gdp.reason?.message);
+          const row = gdpTable?.get(isoNumeric);
+          if (row) {
+            applyGdpResult({
+              status: 'ok',
+              gdpUSD: row.gdpUSD,
+              gdpYear: row.gdpYear
+            });
+          } else {
+            applyGdpResult({ status: 'empty' });
+          }
         }
 
-        if (pop.status === 'fulfilled') {
-          setPopulation(pop.value.population, pop.value.popYear);
+        // Population
+        if (preloadError) {
+          applyPopResult({ status: 'error' });
         } else {
-          setPopulation(null, null, pop.reason?.message);
+          const row = populationTable?.get(isoNumeric);
+          if (row) {
+            applyPopResult({
+              status: 'ok',
+              population: row.population,
+              popYear: row.popYear
+            });
+          } else {
+            applyPopResult({ status: 'empty' });
+          }
         }
+
       } catch (err) {
         console.error(err);
+        setAllStatuses('Request failed: unexpected error.');
       } finally {
         showLoading(false);
+        inFlight = false;
       }
     }
 
-    
-
-    // --- Your three queries, adapted to a single chosen country (VALUES wd:Qxxx)
-    async function queryEndemicForCountry(qid) {
-      const query = `
-      #title: Endemic & Endangered Endemic Species for ${qid}
-      SELECT
-        (COALESCE(?allSpecies, 0) AS ?totalEndemicSpecies)
-        (COALESCE(?endangeredSpecies, 0) AS ?endangeredEndemicSpecies)
-      WHERE {
-        VALUES ?country { wd:${qid} }
-
-        OPTIONAL {
-          SELECT ?country (COUNT(DISTINCT ?sp) AS ?allSpecies)
-          WHERE {
-            ?sp wdt:P31 wd:Q16521 ;
-                wdt:P105 wd:Q7432 ;
-                wdt:P183 ?country .
-          }
-          GROUP BY ?country
-        }
-
-        OPTIONAL {
-          SELECT ?country (COUNT(DISTINCT ?sp2) AS ?endangeredSpecies)
-          WHERE {
-            ?sp2 wdt:P31  wd:Q16521 ;
-                 wdt:P105 wd:Q7432 ;
-                 wdt:P141 wd:Q96377276 ;
-                 wdt:P183 ?country .
-          }
-          GROUP BY ?country
-        }
-      }`;
-      const data = await runSparql(query);
-      const row = data.results.bindings[0] || {};
-      return {
-        totalEndemicSpecies: +(row.totalEndemicSpecies?.value || 0),
-        endangeredEndemicSpecies: +(row.endangeredEndemicSpecies?.value || 0)
-      };
-    }
-
-    async function queryGdpForCountry(qid) {
-      const query = `
-      #title: Latest Nominal GDP (USD) for ${qid}
-      SELECT ?gdpUSD ?gdpYear WHERE {
-        VALUES ?country { wd:${qid} }
-
-        {
-          SELECT ?country (MAX(?date) AS ?latestDate)
-          WHERE {
-            ?country p:P2131 ?st .
-            ?st pq:P585 ?date .
-          }
-          GROUP BY ?country
-        }
-
-        ?country p:P2131 ?st2 .
-        ?st2 pq:P585 ?latestDate ;
-             ps:P2131 ?gdpUSD .
-        BIND(YEAR(?latestDate) AS ?gdpYear)
-      } LIMIT 1`;
-      const data = await runSparql(query);
-      const row = data.results.bindings[0];
-      return {
-        gdpUSD: row ? +row.gdpUSD.value : null,
-        gdpYear: row ? row.gdpYear.value : null
-      };
-    }
-
-    async function queryPopulationForCountry(qid) {
-      const query = `
-      #title: Latest Population for ${qid}
-      SELECT ?population ?popYear WHERE {
-        VALUES ?country { wd:${qid} }
-
-        {
-          SELECT ?country (MAX(?date) AS ?latestDate)
-          WHERE {
-            ?country p:P1082 ?popStmt .
-            ?popStmt pq:P585 ?date .
-          }
-          GROUP BY ?country
-        }
-
-        ?country p:P1082 ?popStmt2 .
-        ?popStmt2 pq:P585 ?latestDate ;
-                  ps:P1082 ?population .
-        BIND(YEAR(?latestDate) AS ?popYear)
-      } LIMIT 1`;
-      const data = await runSparql(query);
-      const row = data.results.bindings[0];
-      return {
-        population: row ? +row.population.value : null,
-        popYear: row ? row.popYear.value : null
-      };
-    }
-
-    // --- UI helpers
+    // ---------- UI helpers ----------
     function showLoading(on) {
       $loading.style.display = on ? 'flex' : 'none';
       $loading.setAttribute('aria-hidden', on ? 'false' : 'true');
@@ -314,40 +489,133 @@
     }
 
     function clearPanel() {
-      setEndemic(null, null);
-      setGDP(null, null);
-      setPopulation(null, null);
+      setEndemic({ status:null });
+      setGDP({ status:null });
+      setPopulation({ status:null });
       drawEndemicChart(0, 0);
+      setStatuses('', '', '');
     }
 
-    function setEndemic(total, endangered, err) {
+    function setStatuses(endemicMsg, gdpMsg, popMsg) {
+      const es = document.getElementById('endemicStatus');
+      const gs = document.getElementById('gdpStatus');
+      const ps = document.getElementById('popStatus');
+      es.textContent = endemicMsg || '';
+      gs.textContent = gdpMsg || '';
+      ps.textContent = popMsg || '';
+      [es, gs, ps].forEach(el => el.classList.remove('err'));
+    }
+
+    function setAllStatuses(message) {
+      const es = document.getElementById('endemicStatus');
+      const gs = document.getElementById('gdpStatus');
+      const ps = document.getElementById('popStatus');
+      [es, gs, ps].forEach(el => { el.textContent = message || ''; el.classList.add('err'); });
+    }
+
+    function applyEndemicResult(res) {
+      if (res.status === 'ok') {
+        setEndemic(res);
+        drawEndemicChart(res.totalEndemicSpecies, res.endangeredEndemicSpecies);
+        document.getElementById('endemicStatus').textContent = '';
+        document.getElementById('endemicStatus').classList.remove('err');
+      } else if (res.status === 'empty') {
+        setEndemic({ status:'empty' });
+        document.getElementById('endemicStatus').textContent = 'No data';
+        document.getElementById('endemicStatus').classList.remove('err');
+        drawEndemicChart(0, 0);
+      } else {
+        setEndemic({ status:'error' });
+        document.getElementById('endemicStatus').textContent = 'Request failed';
+        document.getElementById('endemicStatus').classList.add('err');
+        drawEndemicChart(0, 0);
+      }
+    }
+
+    function applyGdpResult(res) {
+      if (res.status === 'ok') {
+        setGDP(res);
+        document.getElementById('gdpStatus').textContent = '';
+        document.getElementById('gdpStatus').classList.remove('err');
+      } else if (res.status === 'empty') {
+        setGDP({ status:'empty' });
+        document.getElementById('gdpStatus').textContent = 'No data';
+        document.getElementById('gdpStatus').classList.remove('err');
+      } else {
+        setGDP({ status:'error' });
+        document.getElementById('gdpStatus').textContent = 'Request failed';
+        document.getElementById('gdpStatus').classList.add('err');
+      }
+    }
+
+    function applyPopResult(res) {
+      if (res.status === 'ok') {
+        setPopulation(res);
+        document.getElementById('popStatus').textContent = '';
+        document.getElementById('popStatus').classList.remove('err');
+      } else if (res.status === 'empty') {
+        setPopulation({ status:'empty' });
+        document.getElementById('popStatus').textContent = 'No data';
+        document.getElementById('popStatus').classList.remove('err');
+      } else {
+        setPopulation({ status:'error' });
+        document.getElementById('popStatus').textContent = 'Request failed';
+        document.getElementById('popStatus').classList.add('err');
+      }
+    }
+
+    function setEndemic(payload) {
       const totalEl = document.getElementById('totalEndemic');
       const endEl = document.getElementById('endangeredEndemic');
-      if (err) {
-        totalEl.textContent = 'Error';
-        endEl.textContent = 'Error';
-        return;
+      if (payload.status === 'ok') {
+        totalEl.textContent = fmtInt(payload.totalEndemicSpecies);
+        endEl.textContent = fmtInt(payload.endangeredEndemicSpecies);
+      } else if (payload.status === 'empty') {
+        totalEl.textContent = '—';
+        endEl.textContent = '—';
+      } else if (payload.status === 'error') {
+        totalEl.textContent = 'Request failed';
+        endEl.textContent = 'Request failed';
+      } else {
+        totalEl.textContent = '—';
+        endEl.textContent = '—';
       }
-      totalEl.textContent = (total ?? '—') === '—' ? '—' : fmtInt(total);
-      endEl.textContent = (endangered ?? '—') === '—' ? '—' : fmtInt(endangered);
     }
 
-    function setGDP(value, year, err) {
+    function setGDP(payload) {
       const g = document.getElementById('gdp');
       const gy = document.getElementById('gdpYear');
-      if (err) { g.textContent = 'Error'; gy.textContent=''; return; }
-      if (value == null) { g.textContent = '—'; gy.textContent=''; return; }
-      g.textContent = `${fmtMoney(value)} USD`;
-      gy.textContent = year ? `Year: ${year}` : '';
+      if (payload.status === 'ok') {
+        g.textContent = `${fmtMoney(payload.gdpUSD)} USD`;
+        gy.textContent = payload.gdpYear ? `Year: ${payload.gdpYear}` : '';
+      } else if (payload.status === 'empty') {
+        g.textContent = '—';
+        gy.textContent = '';
+      } else if (payload.status === 'error') {
+        g.textContent = 'Request failed';
+        gy.textContent = '';
+      } else {
+        g.textContent = '—';
+        gy.textContent = '';
+      }
     }
 
-    function setPopulation(value, year, err) {
+    function setPopulation(payload) {
       const p = document.getElementById('population');
       const py = document.getElementById('popYear');
-      if (err) { p.textContent = 'Error'; py.textContent=''; return; }
-      if (value == null) { p.textContent = '—'; py.textContent=''; return; }
-      p.textContent = fmtInt(value);
-      py.textContent = year ? `Year: ${year}` : '';
+      if (payload.status === 'ok') {
+        p.textContent = fmtInt(payload.population);
+        py.textContent = payload.popYear ? `Year: ${payload.popYear}` : '';
+      } else if (payload.status === 'empty') {
+        p.textContent = '—';
+        py.textContent = '';
+      } else if (payload.status === 'error') {
+        p.textContent = 'Request failed';
+        py.textContent = '';
+      } else {
+        p.textContent = '—';
+        py.textContent = '';
+      }
     }
 
     function drawEndemicChart(total, endangered) {
@@ -382,11 +650,13 @@
         .call(g=>g.selectAll('line,path').attr('stroke','#2a3666'));
     }
 
-    // Kickoff
+    // Boot: draw map (tables load on first click; you can also preload here if you prefer)
     (async function init() {
       await drawMap();
-      // Optional: default to a known country on load (e.g., Netherlands ISO numeric 528)
-      // simulate click by directly calling handler with a stub having id=528
+      // Optional eager preload to make first click instant:
+      // showLoading(true);
+      // try { await preloadAllTables(); } finally { showLoading(false); }
+      // Optionally preload a country:
       // handleCountryClick({ id: 528, properties: { name: 'Netherlands' } });
     })();
   </script>
