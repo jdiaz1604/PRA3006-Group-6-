@@ -83,16 +83,16 @@ main { display:flex; flex-direction:column; gap:40px; }
 .attribution { margin-top:8px; font-size:11px; color:var(--muted); }
 
 .map-root path { transition:fill .2s, opacity .2s; }
-.sphere { fill:#0a1029; stroke:#1b2551; stroke-width:1; }
-.continent { fill:#111935; stroke:#233569; stroke-width:0.9; cursor:pointer; }
-.continent:hover { fill:#1a2a55; }
+.sphere { fill:#0d2942; stroke:#494c58; stroke-width:1; }
+.continent { fill:#30630f; stroke:#04070e; stroke-width:0.9; cursor:pointer; }
+.continent:hover { fill:#8fe0d7; }
 .continent-selected { fill:#2f4c93; stroke:#7ba3ff; }
 .continent-dim { opacity:0.25; }
 
 .countries-layer { opacity:0.05; pointer-events:none; transition:opacity .2s; }
 .countries-layer.active { opacity:1; pointer-events:auto; }
-.country { fill:#162145; stroke:#223064; stroke-width:0.5; cursor:pointer; }
-.country:hover { fill:#223166; }
+.country { fill:#30630f; stroke:#04070e; stroke-width:0.5; cursor:pointer; }
+.country:hover { fill:#8fe0d7; }
 .country-muted { opacity:0.15; pointer-events:none; }
 .country-selected { fill:#3857b1 !important; stroke:#8cafff; stroke-width:1.4px; }
 
