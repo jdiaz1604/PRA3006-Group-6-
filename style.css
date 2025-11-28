@@ -82,6 +82,9 @@ main { display:flex; flex-direction:column; gap:40px; }
 .note { margin-top:4px; color:var(--muted); font-size:12px; }
 .legend { margin:10px 0 2px; font-size:12px; color:var(--muted); }
 .attribution { margin-top:8px; font-size:11px; color:var(--muted); }
+.pie-legend { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.pie-legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+.pie-swatch { width:12px; height:12px; border-radius:4px; display:inline-block; border:1px solid rgba(0,0,0,0.25); }
 
 .map-root path { transition:fill .2s, opacity .2s; }
 .sphere { fill:#0a1029; stroke:#1b2551; stroke-width:1; }

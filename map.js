@@ -388,7 +388,11 @@ function summarizeContinent(name) {
     gdpCount: 0,
     popCount: 0,
     totalEndemic: 0,
-    endangered: 0,
+    threatened: 0,
+    nt: 0,
+    vu: 0,
+    en: 0,
+    cr: 0,
     gdpUSD: 0,
     population: 0,
     gdpYears: new Set(),
@@ -399,7 +403,15 @@ function summarizeContinent(name) {
     if (eRow) {
       summary.endemicCount++;
       summary.totalEndemic += eRow.totalEndemicSpecies || 0;
-      summary.endangered += eRow.endangeredEndemicSpecies || 0;
+      const nt = eRow.nearThreatenedEndemicSpecies || 0;
+      const vu = eRow.vulnerableEndemicSpecies || 0;
+      const en = eRow.endangeredEndemicSpecies || 0;
+      const cr = eRow.criticallyEndangeredEndemicSpecies || 0;
+      summary.nt += nt;
+      summary.vu += vu;
+      summary.en += en;
+      summary.cr += cr;
+      summary.threatened += nt + vu + en + cr;
     }
     const gRow = gdpTable?.get(iso);
     if (gRow) {
@@ -437,7 +449,14 @@ function applyContinentSummary(summary, name) {
     return;
   }
   if (summary.endemicCount) {
-    applyEndemicResult({ status: 'ok', totalEndemicSpecies: summary.totalEndemic, endangeredEndemicSpecies: summary.endangered });
+    applyEndemicResult({
+      status: 'ok',
+      totalEndemicSpecies: summary.totalEndemic,
+      nearThreatened: summary.nt,
+      vulnerable: summary.vu,
+      endangered: summary.en,
+      criticallyEndangered: summary.cr
+    });
   } else {
     applyEndemicResult({ status: 'empty' });
   }
@@ -481,7 +500,10 @@ async function hydrateCountryPanel(feature) {
     applyEndemicResult({
       status: 'ok',
       totalEndemicSpecies: endemicRow.totalEndemicSpecies,
-      endangeredEndemicSpecies: endemicRow.endangeredEndemicSpecies
+      nearThreatened: endemicRow.nearThreatenedEndemicSpecies,
+      vulnerable: endemicRow.vulnerableEndemicSpecies,
+      endangered: endemicRow.endangeredEndemicSpecies,
+      criticallyEndangered: endemicRow.criticallyEndangeredEndemicSpecies
     });
   } else {
     applyEndemicResult({ status: 'empty' });
@@ -629,8 +651,11 @@ SELECT
   ?countryLabel
   ?iso3
   ?isoNum
-  (COALESCE(?allSpecies, 0)        AS ?totalEndemicSpecies)
-  (COALESCE(?endangeredSpecies, 0) AS ?endangeredEndemicSpecies)
+  (COALESCE(?allSpecies, 0)  AS ?totalEndemicSpecies)
+  (COALESCE(?ntSpecies, 0)   AS ?nearThreatenedEndemicSpecies)
+  (COALESCE(?vuSpecies, 0)   AS ?vulnerableEndemicSpecies)
+  (COALESCE(?enSpecies, 0)   AS ?endangeredEndemicSpecies)
+  (COALESCE(?crSpecies, 0)   AS ?criticallyEndangeredEndemicSpecies)
 WHERE {
   ?country wdt:P31 wd:Q6256 .
   OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
@@ -649,12 +674,48 @@ GROUP BY ?country
   }
 
   OPTIONAL {
-SELECT ?country (COUNT(DISTINCT ?sp2) AS ?endangeredSpecies)
+SELECT ?country (COUNT(DISTINCT ?spNT) AS ?ntSpecies)
 WHERE {
-  ?sp2 wdt:P31  wd:Q16521 ;
-       wdt:P105 wd:Q7432 ;
-       wdt:P141 wd:Q96377276 ;
-       wdt:P183 ?country .
+  ?spNT wdt:P31  wd:Q16521 ;
+        wdt:P105 wd:Q7432 ;
+        wdt:P141 wd:Q719675 ;
+        wdt:P183 ?country .
+  ?country wdt:P31 wd:Q6256 .
+}
+GROUP BY ?country
+  }
+
+  OPTIONAL {
+SELECT ?country (COUNT(DISTINCT ?spVU) AS ?vuSpecies)
+WHERE {
+  ?spVU wdt:P31  wd:Q16521 ;
+        wdt:P105 wd:Q7432 ;
+        wdt:P141 wd:Q278113 ;
+        wdt:P183 ?country .
+  ?country wdt:P31 wd:Q6256 .
+}
+GROUP BY ?country
+  }
+
+  OPTIONAL {
+SELECT ?country (COUNT(DISTINCT ?spEN) AS ?enSpecies)
+WHERE {
+  ?spEN wdt:P31  wd:Q16521 ;
+        wdt:P105 wd:Q7432 ;
+        wdt:P141 wd:Q96377276 ;
+        wdt:P183 ?country .
+  ?country wdt:P31 wd:Q6256 .
+}
+GROUP BY ?country
+  }
+
+  OPTIONAL {
+SELECT ?country (COUNT(DISTINCT ?spCR) AS ?crSpecies)
+WHERE {
+  ?spCR wdt:P31  wd:Q16521 ;
+        wdt:P105 wd:Q7432 ;
+        wdt:P141 wd:Q219127 ;
+        wdt:P183 ?country .
   ?country wdt:P31 wd:Q6256 .
 }
 GROUP BY ?country
@@ -748,12 +809,19 @@ function buildEndemicMap(json) {
     const isoNumStr = r.isoNum?.value;
     const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
     if (!Number.isFinite(isoInt)) continue;
+    const nt = +(r.nearThreatenedEndemicSpecies?.value || 0);
+    const vu = +(r.vulnerableEndemicSpecies?.value || 0);
+    const en = +(r.endangeredEndemicSpecies?.value || 0);
+    const cr = +(r.criticallyEndangeredEndemicSpecies?.value || 0);
     m.set(isoInt, {
       countryLabel: r.countryLabel?.value || '',
       iso3: r.iso3?.value || '',
       isoNum: isoNumStr,
       totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),
-      endangeredEndemicSpecies: +(r.endangeredEndemicSpecies?.value || 0)
+      nearThreatenedEndemicSpecies: nt,
+      vulnerableEndemicSpecies: vu,
+      endangeredEndemicSpecies: en,
+      criticallyEndangeredEndemicSpecies: cr
     });
   }
   return m;
@@ -812,7 +880,7 @@ function clearPanel() {
   setEndemic({ status: null });
   setGDP({ status: null });
   setPopulation({ status: null });
-  drawEndemicChart(0, 0);
+  drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
   setStatuses('', '', '');
 }
 
@@ -837,22 +905,28 @@ function applyEndemicResult(res) {
   const status = document.getElementById('endemicStatus');
   if (res.status === 'ok') {
     setEndemic(res);
-    drawEndemicChart(res.totalEndemicSpecies, res.endangeredEndemicSpecies);
+    drawEndemicChart({
+      total: res.totalEndemicSpecies,
+      nt: res.nearThreatened,
+      vu: res.vulnerable,
+      en: res.endangered,
+      cr: res.criticallyEndangered
+    });
     status.textContent = '';
     status.classList.remove('err');
   } else if (res.status === 'empty') {
     setEndemic({ status: 'empty' });
-    drawEndemicChart(0, 0);
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
     status.textContent = 'No data';
     status.classList.remove('err');
   } else if (res.status === 'error') {
     setEndemic({ status: 'error' });
-    drawEndemicChart(0, 0);
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
     status.textContent = 'Request failed';
     status.classList.add('err');
   } else {
     setEndemic({ status: null });
-    drawEndemicChart(0, 0);
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
     status.textContent = '';
     status.classList.remove('err');
   }
@@ -904,8 +978,13 @@ function setEndemic(payload) {
   const totalEl = document.getElementById('totalEndemic');
   const endEl = document.getElementById('endangeredEndemic');
   if (payload.status === 'ok') {
+    const nt = payload.nearThreatened || 0;
+    const vu = payload.vulnerable || 0;
+    const en = payload.endangered || 0;
+    const cr = payload.criticallyEndangered || 0;
+    const threatened = nt + vu + en + cr;
     totalEl.textContent = fmtInt(payload.totalEndemicSpecies);
-    endEl.textContent = fmtInt(payload.endangeredEndemicSpecies);
+    endEl.textContent = fmtInt(threatened);
   } else if (payload.status === 'empty') {
     totalEl.textContent = '—';
     endEl.textContent = '—';
@@ -954,36 +1033,58 @@ function setPopulation(payload) {
   }
 }
 
-function drawEndemicChart(total, endangered) {
+function drawEndemicChart({ total, nt, vu, en, cr }) {
   const cont = d3.select('#chart');
   cont.selectAll('*').remove();
-  const W = 300, H = 160, M = { t: 10, r: 12, b: 26, l: 42 };
+  const width = 280;
+  const height = 200;
+  const radius = Math.min(width, height) / 2 - 6;
+  const threatened = (nt || 0) + (vu || 0) + (en || 0) + (cr || 0);
+  const other = Math.max((total || 0) - threatened, 0);
+
   const data = [
-    { k: 'Endemic', v: +total || 0 },
-    { k: 'Endangered endemic', v: +endangered || 0 }
-  ];
-  const svgC = cont.append('svg').attr('width', W).attr('height', H);
-  const x = d3.scaleBand().domain(data.map(d => d.k)).range([M.l, W - M.r]).padding(0.35);
-  const y = d3.scaleLinear().domain([0, d3.max(data, d => d.v) || 1]).nice().range([H - M.b, M.t]);
+    { label: 'Near threatened', value: nt || 0, color: '#58BB43' },
+    { label: 'Vulnerable', value: vu || 0, color: '#3AA346' },
+    { label: 'Endangered', value: en || 0, color: '#1E8C45' },
+    { label: 'Critically endangered', value: cr || 0, color: '#9BE931' },
+    { label: 'Other', value: other, color: '#8a5a2e' }
+  ].filter(d => d.value > 0);
 
-  svgC.append('g')
-    .selectAll('rect')
+  if (!data.length) return;
+
+  const svgC = cont.append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .append('g')
+    .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+  const pie = d3.pie().sort(null).value(d => d.value);
+  const arc = d3.arc().innerRadius(0).outerRadius(radius);
+
+  const arcs = pie(data);
+
+  svgC.selectAll('path')
+    .data(arcs)
+    .join('path')
+    .attr('d', arc)
+    .attr('fill', d => d.data.color)
+    .attr('stroke', '#0b1020')
+    .attr('stroke-width', 0.6);
+
+  // Legend next to the chart
+  const legend = cont.append('div').attr('class', 'pie-legend');
+  const items = legend.selectAll('.pie-legend-item')
     .data(data)
-    .join('rect')
-    .attr('x', d => x(d.k))
-    .attr('y', d => y(d.v))
-    .attr('width', x.bandwidth())
-    .attr('height', d => y(0) - y(d.v))
-    .attr('fill', (d, i) => i === 0 ? '#6fb1ff' : '#9ad98b');
+    .join('div')
+    .attr('class', 'pie-legend-item');
 
-  const ax = d3.axisBottom(x);
-  const ay = d3.axisLeft(y).ticks(5).tickFormat(d3.format('.2s'));
+  items.append('span')
+    .attr('class', 'pie-swatch')
+    .style('background', d => d.color);
 
-  svgC.append('g').attr('transform', `translate(0,${H - M.b})`).call(ax)
-    .selectAll('text').style('fill', '#a8b3c7').style('font-size', '11px');
-  svgC.append('g').attr('transform', `translate(${M.l},0)`).call(ay)
-    .call(g => g.selectAll('text').style('fill', '#a8b3c7').style('font-size', '11px'))
-    .call(g => g.selectAll('line,path').attr('stroke', '#2a3666'));
+  items.append('span')
+    .attr('class', 'pie-label')
+    .text(d => `${d.label}: ${fmtInt(d.value)}`);
 }
 
 function formatYearLabel(value) {
