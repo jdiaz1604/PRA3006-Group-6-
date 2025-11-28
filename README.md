@@ -8,7 +8,7 @@ Use the splash page (`index.html`) to understand the project and launch the expl
 
 1. Clone or download this repository.
 2. Serve the root directory using any static web-server (e.g., `python3 -m http.server 9000`) or open `index.html` directly via the VS Code Live Server extension.
-3. Visit `/index.html` for the landing page, `/map.html` for the explorer, or `/correlations.html` for the statistical plots.
+3. Visit `/index.html` for the landing page, `/map.html` for the explorer, `/correlations.html` for the statistical plots, or `/contact.html` for contact info.
 
 > **Note:** The explorer fetches live data from the QLever Wikidata endpoint on first interaction. An internet connection must be available to populate the tables.
 
@@ -57,6 +57,7 @@ Open `map.html` and interact with the continents to trigger the SPARQL downloads
 ├── map.js              # All D3 logic, SPARQL queries, and UI state for the explorer
 ├── correlations.html   # Scatter plot dashboard
 ├── correlations.js     # Data wrangling + D3 scatter plots
+├── contact.html        # Contact/overview page
 ├── style.css           # Shared styling and responsive layout rules
 ├── README.md           # This documentation
 ├── AUTHORS.md          # Team roster & roles
