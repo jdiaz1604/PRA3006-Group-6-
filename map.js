@@ -41,7 +41,6 @@ let resizeTimer = null;
 let inFlight = false;
 
 const svg = d3.select('.map');
-const mapWrap = document.querySelector('.map-wrap');
 
 function setupButtons() {
   startBtn?.addEventListener('click', () => {
@@ -51,100 +50,46 @@ function setupButtons() {
 }
 
 function resize() {
-  const w = mapWrap.clientWidth || 800;
-  const h = Math.max(460, window.innerHeight - 220);
+  const mapWrap = document.querySelector('.map-wrap');
+  const w = mapWrap?.clientWidth || 800;
+  const h = mapWrap?.clientHeight || Math.max(500, window.innerHeight * 0.7);
   return { w, h };
 }
 
 async function loadGeoData() {
-  worldTopo = await d3.json(worldUrl);
-  countries = topojson.feature(worldTopo, worldTopo.objects.countries).features;
-  assignContinents();
+  try {
+    worldTopo = await d3.json(worldUrl);
+    countries = topojson.feature(worldTopo, worldTopo.objects.countries).features;
+    assignContinents();
+  } catch (error) {
+    console.error('Failed to load geo data:', error);
+    throw error;
+  }
 }
 
 const NAME_OVERRIDES = new Map([
-  // Europe/Asia junctions
-  ['Türkiye', 'Europe'],
-  ['Turkey', 'Europe'],
-  ['Cyprus', 'Europe'],
-  ['Georgia', 'Europe'],
-  ['Kazakhstan', 'Asia'],
-  ['Azerbaijan', 'Asia'],
-  ['Armenia', 'Asia'],
-
-  // Africa exceptions
-  ['Egypt', 'Africa'],
-  ['Madagascar', 'Africa'],
-  ['Cabo Verde', 'Africa'],
-  ['Seychelles', 'Africa'],
-  ['Mauritius', 'Africa'],
-
-  // Americas (Caribbean + Central)
-  ['Greenland', 'North America'],
-  ['Mexico', 'North America'],
-  ['Guatemala', 'North America'],
-  ['Belize', 'North America'],
-  ['El Salvador', 'North America'],
-  ['Honduras', 'North America'],
-  ['Nicaragua', 'North America'],
-  ['Costa Rica', 'North America'],
-  ['Panama', 'North America'],
-  ['Cuba', 'North America'],
-  ['Jamaica', 'North America'],
-  ['Haiti', 'North America'],
-  ['Dominican Republic', 'North America'],
-  ['Bahamas', 'North America'],
-  ['The Bahamas', 'North America'],
-  ['Barbados', 'North America'],
-  ['Trinidad and Tobago', 'North America'],
-  ['Grenada', 'North America'],
-  ['Saint Lucia', 'North America'],
-  ['Saint Vincent and the Grenadines', 'North America'],
-  ['Dominica', 'North America'],
-  ['Antigua and Barbuda', 'North America'],
-  ['Saint Kitts and Nevis', 'North America'],
-  ['Puerto Rico', 'North America'],
-
-  // Middle East / Arabian Peninsula
-  ['Saudi Arabia', 'Asia'],
-  ['United Arab Emirates', 'Asia'],
-  ['Oman', 'Asia'],
-  ['Yemen', 'Asia'],
-  ['Qatar', 'Asia'],
-  ['Bahrain', 'Asia'],
-  ['Kuwait', 'Asia'],
-  ['Israel', 'Asia'],
-  ['Lebanon', 'Asia'],
-  ['Jordan', 'Asia'],
-  ['State of Palestine', 'Asia'],
-
-  // Oceania islands
-  ['Papua New Guinea', 'Oceania'],
-  ['New Caledonia', 'Oceania'],
-  ['New Zealand', 'Oceania'],
-  ['Fiji', 'Oceania'],
-  ['Solomon Islands', 'Oceania'],
-  ['Vanuatu', 'Oceania'],
-  ['Samoa', 'Oceania'],
-  ['Tonga', 'Oceania'],
-  ['Kiribati', 'Oceania'],
-  ['Micronesia', 'Oceania'],
-  ['Palau', 'Oceania'],
-  ['Marshall Islands', 'Oceania'],
-  ['Nauru', 'Oceania'],
-  ['Tuvalu', 'Oceania'],
-
-  // South / Southeast Asia islands
-  ['Timor-Leste', 'Asia'],
-  ['Indonesia', 'Asia'],
-  ['Philippines', 'Asia'],
-  ['Japan', 'Asia'],
-  ['Sri Lanka', 'Asia'],
-
-  // Polar territories
+  ['Türkiye', 'Europe'], ['Turkey', 'Europe'], ['Cyprus', 'Europe'], ['Georgia', 'Europe'],
+  ['Kazakhstan', 'Asia'], ['Azerbaijan', 'Asia'], ['Armenia', 'Asia'], ['Egypt', 'Africa'],
+  ['Madagascar', 'Africa'], ['Cabo Verde', 'Africa'], ['Seychelles', 'Africa'], ['Mauritius', 'Africa'],
+  ['Greenland', 'North America'], ['Mexico', 'North America'], ['Guatemala', 'North America'],
+  ['Belize', 'North America'], ['El Salvador', 'North America'], ['Honduras', 'North America'],
+  ['Nicaragua', 'North America'], ['Costa Rica', 'North America'], ['Panama', 'North America'],
+  ['Cuba', 'North America'], ['Jamaica', 'North America'], ['Haiti', 'North America'],
+  ['Dominican Republic', 'North America'], ['Bahamas', 'North America'], ['The Bahamas', 'North America'],
+  ['Barbados', 'North America'], ['Trinidad and Tobago', 'North America'], ['Grenada', 'North America'],
+  ['Saint Lucia', 'North America'], ['Saint Vincent and the Grenadines', 'North America'],
+  ['Dominica', 'North America'], ['Antigua and Barbuda', 'North America'], ['Saint Kitts and Nevis', 'North America'],
+  ['Puerto Rico', 'North America'], ['Saudi Arabia', 'Asia'], ['United Arab Emirates', 'Asia'],
+  ['Oman', 'Asia'], ['Yemen', 'Asia'], ['Qatar', 'Asia'], ['Bahrain', 'Asia'], ['Kuwait', 'Asia'],
+  ['Israel', 'Asia'], ['Lebanon', 'Asia'], ['Jordan', 'Asia'], ['State of Palestine', 'Asia'],
+  ['Papua New Guinea', 'Oceania'], ['New Caledonia', 'Oceania'], ['New Zealand', 'Oceania'],
+  ['Fiji', 'Oceania'], ['Solomon Islands', 'Oceania'], ['Vanuatu', 'Oceania'], ['Samoa', 'Oceania'],
+  ['Tonga', 'Oceania'], ['Kiribati', 'Oceania'], ['Micronesia', 'Oceania'], ['Palau', 'Oceania'],
+  ['Marshall Islands', 'Oceania'], ['Nauru', 'Oceania'], ['Tuvalu', 'Oceania'], ['Timor-Leste', 'Asia'],
+  ['Indonesia', 'Asia'], ['Philippines', 'Asia'], ['Japan', 'Asia'], ['Sri Lanka', 'Asia'],
   ['French Southern Territories', 'Antarctica']
 ]);
-// Add these helper functions for biome coloring
+
 function getCountryISO3(country) {
   const countryName = country.properties?.name;
   const isoMap = {
@@ -164,19 +109,16 @@ function getCountryBiome(country) {
   const countryName = country.properties?.name;
   const continent = continentByCountryId.get(country.id);
   
-  // Extreme biomes that override everything
   if (countryName === 'Greenland') return 'ice';
   if (countryName === 'Antarctica') return 'ice';
   if (countryName === 'Iceland') return 'tundra';
   
-  // Desert countries
   const desertCountries = ['Saudi Arabia', 'Egypt', 'Libya', 'Algeria', 'Australia', 'United Arab Emirates', 
                           'Oman', 'Yemen', 'Kuwait', 'Qatar', 'Bahrain', 'Mauritania', 'Niger', 'Chad', 
                           'Sudan', 'Mali', 'Western Sahara', 'Jordan', 'Israel', 'Iraq', 'Iran', 'Pakistan',
                           'Afghanistan', 'Turkmenistan', 'Uzbekistan', 'Kazakhstan', 'Mongolia'];
   if (desertCountries.includes(countryName)) return 'desert';
   
-  // Central African rainforest belt
   const rainforestCountries = ['Brazil', 'Colombia', 'Indonesia', 'Malaysia', 'Democratic Republic of the Congo', 
                               'Peru', 'Venezuela', 'Ecuador', 'Republic of the Congo', 'Gabon', 'Cameroon', 
                               'Central African Republic', 'Equatorial Guinea', 'Ghana', 'Ivory Coast', 'Liberia', 
@@ -185,34 +127,28 @@ function getCountryBiome(country) {
                               'Myanmar', 'Sri Lanka', 'Bangladesh'];
   if (rainforestCountries.includes(countryName)) return 'rainforest';
   
-  // Tundra/Arctic countries
   const tundraCountries = ['Russia', 'Canada', 'Norway', 'Sweden', 'Finland'];
   if (tundraCountries.includes(countryName)) return 'tundra';
   
-  // Mountain countries
   const mountainCountries = ['Nepal', 'Bhutan', 'Switzerland', 'Austria', 'Bolivia'];
   if (mountainCountries.includes(countryName)) return 'mountain';
   
-  // Mediterranean countries
   const mediterraneanCountries = ['Spain', 'Italy', 'Greece', 'Turkey', 'Portugal', 'Israel', 'Lebanon', 
                                  'Morocco', 'Tunisia', 'Algeria', 'Syria', 'Jordan', 'Cyprus', 'Malta',
                                  'Croatia', 'Albania', 'Montenegro'];
   if (mediterraneanCountries.includes(countryName)) return 'mediterranean';
   
-  // Grassland/Savanna countries
   const grasslandCountries = ['Argentina', 'South Africa', 'Kenya', 'Zambia', 'Zimbabwe', 'Botswana', 
                              'Namibia', 'Mozambique', 'Madagascar', 'Malawi', 'Angola', 'Ethiopia',
                              'Somalia', 'Eritrea', 'Djibouti', 'Paraguay', 'Uruguay'];
   if (grasslandCountries.includes(countryName)) return 'grassland';
   
-  // Default forest countries (temperate regions)
   const forestCountries = ['United States', 'China', 'Japan', 'South Korea', 'North Korea', 'France', 
                           'Germany', 'United Kingdom', 'Poland', 'Ukraine', 'Belarus', 'Romania',
                           'Bulgaria', 'Serbia', 'Hungary', 'Czech Republic', 'Slovakia', 'Austria',
                           'Switzerland', 'Chile', 'New Zealand'];
   if (forestCountries.includes(countryName)) return 'forest';
   
-  // Continent-based fallbacks
   if (continent === 'Europe') return 'forest';
   if (continent === 'North America') return 'forest';
   if (continent === 'Asia') return 'forest';
@@ -223,6 +159,7 @@ function getCountryBiome(country) {
   
   return 'forest';
 }
+
 function assignContinents() {
   continentByCountryId.clear();
   countriesByContinent.clear();
@@ -286,7 +223,7 @@ function renderMap() {
   if (!countries.length || !continents.length) return;
   const { w, h } = resize();
   svg.attr('width', w).attr('height', h);
-  projection = d3.geoMercator().fitExtent([[10, 10], [w - 10, h - 10]], { type: 'Sphere' });
+  projection = d3.geoMercator().fitExtent([[20, 20], [w - 20, h - 20]], { type: 'Sphere' });
   path = d3.geoPath(projection);
 
   sphereLayer.attr('d', path({ type: 'Sphere' }));
@@ -296,13 +233,13 @@ function renderMap() {
   .join(
     enter => enter.append('path')
       .attr('class', 'continent')
-      .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '') // ADD THIS LINE
+      .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '')
       .attr('d', path)
       .on('mousemove', handleMouseMove)
       .on('mouseleave', handleMouseLeave)
       .on('click', (event, d) => { event.stopPropagation(); handleContinentClick(d); }),
     update => update
-      .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '') // ADD THIS LINE
+      .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '')
       .attr('d', path),
     exit => exit.remove()
   );
@@ -312,15 +249,15 @@ function renderMap() {
   .join(
     enter => enter.append('path')
       .attr('class', 'country')
-      .attr('data-country', d => getCountryISO3(d)) // ADD THIS LINE
-      .attr('data-biome', d => getCountryBiome(d)) // ADD THIS LINE
+      .attr('data-country', d => getCountryISO3(d))
+      .attr('data-biome', d => getCountryBiome(d))
       .attr('d', path)
       .on('mousemove', handleMouseMove)
       .on('mouseleave', handleMouseLeave)
       .on('click', (event, d) => { event.stopPropagation(); handleCountryClick(d); }),
     update => update
-      .attr('data-country', d => getCountryISO3(d)) // ADD THIS LINE
-      .attr('data-biome', d => getCountryBiome(d)) // ADD THIS LINE
+      .attr('data-country', d => getCountryISO3(d))
+      .attr('data-biome', d => getCountryBiome(d))
       .attr('d', path),
     exit => exit.remove()
   );
@@ -341,7 +278,6 @@ function handleMouseMove(event, feature) {
   $tooltip.style.top = (event.offsetY + 14) + 'px';
   $tooltip.textContent = name;
   
-  // Enhanced styling for continent tooltips
   if (feature.geometry && feature.geometry.type === 'MultiPolygon' || 
       feature.properties?.name && continents.some(c => c.properties?.name === feature.properties?.name)) {
     $tooltip.style.background = 'var(--accent)';
@@ -358,12 +294,12 @@ function handleMouseMove(event, feature) {
 
 function handleMouseLeave() {
   $tooltip.style.opacity = 0;
-  // Reset tooltip styles
   $tooltip.style.background = '#0e1530';
   $tooltip.style.color = 'var(--ink)';
   $tooltip.style.fontWeight = 'normal';
   $tooltip.style.borderColor = '#1f2a50';
 }
+
 async function handleContinentClick(feature) {
   if (!feature || inFlight) return;
   inFlight = true;
@@ -1108,7 +1044,6 @@ function drawEndemicChart({ total, nt, vu, en, cr }) {
     .attr('stroke', '#0b1020')
     .attr('stroke-width', 0.6);
 
-  // Legend next to the chart
   const legend = cont.append('div').attr('class', 'pie-legend');
   const items = legend.selectAll('.pie-legend-item')
     .data(data)
