@@ -69,8 +69,7 @@ function renderCharts(data) {
       svgId: 'chartGDP',
       statsId: 'statsGDP',
       xField: 'gdpUSD',
-      xLabel: 'GDP (USD, trillions)',
-      xDivisor: 1e12,
+      xLabelBase: 'GDP (USD)',
       tooltipFmt: (d) => formatNumber(d.gdpUSD, 'usd'),
       tooltipLabel: 'GDP',
       domainPadding: 0.12
@@ -79,8 +78,7 @@ function renderCharts(data) {
       svgId: 'chartPOP',
       statsId: 'statsPOP',
       xField: 'population',
-      xLabel: 'Population (billions)',
-      xDivisor: 1e9,
+      xLabelBase: 'Population',
       tooltipFmt: (d) => formatNumber(d.population, 'pop'),
       tooltipLabel: 'Population',
       domainPadding: 0.08
@@ -95,11 +93,16 @@ function renderScatter(cfg, data) {
   if (svg.empty()) return;
   svg.selectAll('*').remove();
 
+  const maxRaw = d3.max(data, d => d[cfg.xField]) || 0;
+  const scale = chooseScale(maxRaw, cfg.xLabelBase || cfg.xLabel);
+  const factor = scale.factor || 1;
+  const xLabel = scale.label || (cfg.xLabelBase || '');
+
   const filtered = data
     .filter(row => Number.isFinite(row[cfg.xField]) && row[cfg.xField] > 0)
     .map(row => ({
       ...row,
-      x: row[cfg.xField] / (cfg.xDivisor || 1),
+      x: row[cfg.xField] / factor,
       y: row.fraction
     }));
 
@@ -153,7 +156,7 @@ function renderScatter(cfg, data) {
     .attr('text-anchor', 'middle')
     .attr('fill', '#a8b3c7')
     .attr('font-size', 12)
-    .text(cfg.xLabel);
+    .text(xLabel);
 
   group.append('text')
     .attr('transform', 'rotate(-90)')
@@ -172,8 +175,8 @@ function renderScatter(cfg, data) {
     .attr('r', 5)
     .attr('fill', '#74c0ff')
     .attr('opacity', 0.9)
-    .on('mouseenter', (event, d) => showTooltip(event, d, cfg))
-    .on('mousemove', (event, d) => showTooltip(event, d, cfg))
+    .on('mouseenter', (event, d) => showTooltip(event, d, cfg, svg.node()))
+    .on('mousemove', (event, d) => showTooltip(event, d, cfg, svg.node()))
     .on('mouseleave', hideTooltip);
 
   group.append('line')
@@ -187,12 +190,18 @@ function renderScatter(cfg, data) {
   writeStats(cfg.statsId, regression, filtered.length);
 }
 
-function showTooltip(event, datum, cfg) {
+function showTooltip(event, datum, cfg, svgNode) {
   if (!tooltip) return;
   tooltip.style.opacity = '1';
   tooltip.setAttribute('aria-hidden', 'false');
-  tooltip.style.left = `${event.pageX + 16}px`;
-  tooltip.style.top = `${event.pageY - 10}px`;
+  const x = event.pageX || event.clientX || 0;
+  const y = event.pageY || event.clientY || 0;
+  const left = x + 14;
+  const top = y - 12;
+  const maxLeft = window.innerWidth - 240; // prevent clipping
+  const maxTop = window.innerHeight - 120;
+  tooltip.style.left = `${Math.min(left, maxLeft)}px`;
+  tooltip.style.top = `${Math.min(top, maxTop)}px`;
   tooltip.innerHTML = `
     <strong>${datum.countryLabel}</strong><br>
     Threatened fraction: ${(datum.y * 100).toFixed(1)}%<br>
@@ -241,6 +250,13 @@ function linearRegression(points) {
   const rDenom = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
   const r = rDenom ? (n * sumXY - sumX * sumY) / rDenom : 0;
   return { slope, intercept, r, r2: r * r };
+}
+
+function chooseScale(maxVal, baseLabel) {
+  if (!maxVal || maxVal <= 0) return { factor: 1, label: baseLabel };
+  if (maxVal >= 1e12) return { factor: 1e12, label: `${baseLabel} (trillions)` };
+  if (maxVal >= 1e9) return { factor: 1e9, label: `${baseLabel} (billions)` };
+  return { factor: 1e6, label: `${baseLabel} (millions)` };
 }
 
 async function runSparqlGETWithRetry(query, { retries = 3, baseDelayMs = 400 } = {}) {
