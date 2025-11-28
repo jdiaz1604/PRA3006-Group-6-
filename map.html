@@ -8,11 +8,12 @@
 </head>
 <body>
   <header>
-    <h1>Endemic Species & Economy Explorer</h1>
+    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1>
     <nav>
       <a href="index.html">Home</a>
       <a href="map.html" class="active">Interactive map</a>
       <a href="correlations.html">Correlations</a>
+      <a href="contact.html">Contact</a>
     </nav>
   </header>
 
@@ -90,7 +91,7 @@
           <p class="small" id="dataContext">Start at the continent level to unlock regional totals. Then click any highlighted country to drill into its latest data.</p>
           <ul class="checklist">
             <li>Total endemic species</li>
-            <li>Endangered endemic species</li>
+            <li>Threatened endemic species (NT/VU/EN/CR)</li>
             <li>Latest nominal GDP (USD)</li>
             <li>Latest population</li>
           </ul>
@@ -101,12 +102,12 @@
             <div class="status" id="endemicStatus"></div>
           </div>
           <div class="metric">
-            <div class="metric-label">Endangered endemic species</div>
+            <div class="metric-label">Threatened endemic species</div>
             <div class="metric-value" id="endangeredEndemic">—</div>
           </div>
 
           <div id="chart" style="margin:10px 0 6px;"></div>
-          <div class="legend">Bar chart: endemic vs. endangered endemic</div>
+          <div class="legend">Pie: Near threatened, vulnerable, endangered, critically endangered, other</div>
 
           <div class="metric" style="margin-top:18px;">
             <div class="metric-label">Latest nominal GDP (USD)</div>

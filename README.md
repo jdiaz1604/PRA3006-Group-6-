@@ -8,7 +8,7 @@ Use the splash page (`index.html`) to understand the project and launch the expl
 
 1. Clone or download this repository.
 2. Serve the root directory using any static web-server (e.g., `python3 -m http.server 9000`) or open `index.html` directly via the VS Code Live Server extension.
-3. Visit `/index.html` for the landing page, `/map.html` for the explorer, or `/correlations.html` for the statistical plots.
+3. Visit `/index.html` for the landing page, `/map.html` for the explorer, `/correlations.html` for the statistical plots, or `/contact.html` for contact info.
 
 > **Note:** The explorer fetches live data from the QLever Wikidata endpoint on first interaction. An internet connection must be available to populate the tables.
 
@@ -18,7 +18,7 @@ All three datasets originate from Wikidata statements and are queried through QL
 
 | Dataset | Purpose | Key Wikidata properties | Query ID in `map.js` |
 | ------- | ------- | ----------------------- | -------------------- |
-| Endemic & endangered species | Returns the total number of endemic species for a country and the subset marked as endangered. | `P1082` (population), `P2874` (endemic to), `Q11394` (species) plus custom filters | `Q_END_EMD` |
+| Endemic & threatened species | Returns the total number of endemic species for a country and the subset marked as threatened (NT/VU/EN/CR) with category counts. | `P183` (endemic to), IUCN statuses (`Q719675`, `Q278113`, `Q96377276`, `Q219127`), `Q16521` (taxon), `Q7432` (rank=species) | `Q_END_EMD` |
 | Nominal GDP (USD) | Retrieves the latest statement tagged with currency USD (direct or converted). | `P2131` (GDP), `P38` (currency), `P3487` (normalized USD) | `Q_GDP` |
 | Population totals | Pulls the most recent population statement per country. | `P1082` (population), `P585` (point in time) | `Q_POP` |
 
@@ -57,6 +57,7 @@ Open `map.html` and interact with the continents to trigger the SPARQL downloads
 ├── map.js              # All D3 logic, SPARQL queries, and UI state for the explorer
 ├── correlations.html   # Scatter plot dashboard
 ├── correlations.js     # Data wrangling + D3 scatter plots
+├── contact.html        # Contact/overview page
 ├── style.css           # Shared styling and responsive layout rules
 ├── README.md           # This documentation
 ├── AUTHORS.md          # Team roster & roles
@@ -65,7 +66,7 @@ Open `map.html` and interact with the continents to trigger the SPARQL downloads
 
 ## Correlation dashboard
 
-`correlations.html` reuses the same SPARQL tables but filters to countries with ≥ 50 endemic species, then computes the endangered fraction (`endangered endemic / total endemic`). Two D3 scatter plots compare this fraction against GDP (scaled to USD trillions) and population (billions). Tooltips reveal the raw values, and a least-squares regression line with summary statistics (`n`, slope, intercept, r, R²) appears below each chart so assessors can quickly interpret the direction and strength of the relationships.
+`correlations.html` reuses the same SPARQL tables but filters to countries with ≥ 50 endemic species, then computes the threatened fraction (`(NT+VU+EN+CR) / total endemic`). Two D3 scatter plots compare this fraction against GDP (scaled to USD trillions) and population (billions). Tooltips reveal the raw values, and a least-squares regression line with summary statistics (`n`, slope, intercept, r, R²) appears below each chart so assessors can quickly interpret the direction and strength of the relationships.
 
 ## Accessibility & responsiveness
 
