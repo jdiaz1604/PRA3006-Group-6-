@@ -1,24 +1,54 @@
 :root {
-  /* Green palette from teammate design */
-  --bg:#012100;
-  --ink:#f5fff4;
-  --accent:#1E8C45;
-  --accent-strong:#58BB43;
-  --muted:#a5c7af;
-  --panel:#003a29;
-  --panel-dark:#003321;
+  /* Dark green palette based on your image */
+      --bg:#003a29;          /* deep dark green background */
+      --panel:#014f31;       /* dark green panels */
+      --ink:#e9ffee;         /* soft white-green text */
+      --muted:#a5c7af;       /* muted green-gray text */
+
+      --accent:#1E8C45;      /* medium green accent */
+      --accent-light:#58BB43;
+      --accent-bright:#9BE931;
+      --accent-lime:#C1FF1C;
 }
 
 * { box-sizing:border-box; }
-html, body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; }
-body { min-height:100vh; }
+html, body {
+      margin:0;
+      height:100%;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:Tahoma, Verdana, Geneva, sans-serif;
+    }
+
+body {
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+    }
 
 a, a:visited { color:var(--accent); text-decoration:none; }
 a:hover { text-decoration:underline; }
 
-header { padding:18px 24px; border-bottom:1px solid #1e2748; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-header h1 { margin:0; font-size:18px; line-height:1.3; }
+header {
+      padding:16px 24px;
+      border-bottom:1px solid #0f251c;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      background:rgba(0, 28, 21, 0.96);
+      backdrop-filter:blur(10px);
+    }
 
+h1 {
+      margin:0;
+      font-size:26px;
+      line-height:1.3;
+      text-align:center;
+    }
+
+    
 nav { display:flex; gap:12px; justify-content:center; align-items:center; }
 nav a { color:var(--muted); text-decoration:none; font-size:15px; padding:10px 16px; border-radius:999px; border:1px solid transparent; background:transparent; transition:background .2s, color .2s, border-color .2s; }
 nav a:hover { color:var(--ink); border-color:#1f5a34; background:rgba(31,138,69,0.14); }
@@ -83,7 +113,18 @@ main { display:flex; flex-direction:column; gap:40px; }
 .pie-legend { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
 .pie-legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
 .pie-swatch { width:12px; height:12px; border-radius:4px; display:inline-block; border:1px solid rgba(0,0,0,0.25); }
+.chart-tooltip { position:fixed; pointer-events:none; background:#0e1530; color:#e9ffee; padding:8px 10px; border:1px solid #1f2a50; border-radius:6px; font-size:12px; box-shadow:0 6px 20px rgba(0,0,0,.35); opacity:0; transition:opacity .15s; z-index:9999; }
 
+/* Correlations layout */
+.viz-main { padding:0 24px 60px; display:flex; flex-direction:column; gap:32px; }
+.viz-hero { border-bottom:1px solid #0f4626; }
+.viz-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:20px; align-items:start; }
+.viz-card { background:var(--panel); border:1px solid #0f4626; border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+.chart-header h3 { margin:0; font-size:18px; }
+.chart-header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+.chart-wrap svg { width:100%; height:320px; display:block; background:var(--panel-dark); border-radius:14px; }
+.chart-stats { margin-top:6px; font-size:12px; color:var(--muted); line-height:1.4; }
+.muted { color:var(--muted); }
 /* Map Styles with Realistic Biome Colors */
 .map-root path { transition:fill .2s, opacity .2s; }
 .sphere { fill:#1a3a5f; stroke:#2a4a6f; stroke-width:1; }
