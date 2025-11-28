@@ -18,9 +18,32 @@
   </header>
 
   <main class="home-main">
-    
+    <section class="content-card">
+      <h3>About the project</h3>
+      <p>
+        We set out to test whether a country’s socioeconomic profile (GDP and population size) correlates with the proportion of threatened endemic species. Our hypothesis: higher GDP and smaller population would mean a lower threatened/endemic proportion. After running linear regressions on Wikidata-sourced data, we did not find a significant correlation.
+      </p>
 
-    
+      <h4>List of terms</h4>
+      <p><strong>Endemic species:</strong> a native species found only in a single geographic location (e.g., Australian Koala, Chinese Giant Panda).</p>
+      <p><strong>GDP (Gross Domestic Product):</strong> total market value of all final goods and services produced within a country; used here as a proxy for economic health.</p>
+      <p><strong>Correlation graph:</strong> a visual tool to show the relationship between two variables (positive, negative, or none).</p>
+
+      <h4>What we did</h4>
+      <ul>
+        <li>Created SPARQL queries for <a href="https://qlever.dev/wikidata/nKNf67" target="_blank" rel="noopener">species</a>, <a href="https://qlever.dev/wikidata/PHa2jp" target="_blank" rel="noopener">GDP</a>, and <a href="https://qlever.dev/wikidata/BOquqF" target="_blank" rel="noopener">population</a>.</li>
+        <li>Built an interactive map showing endemic counts and threatened categories (NT, VU, EN, CR) per country.</li>
+        <li>Ran regressions and plotted correlations for threatened fraction vs GDP and population.</li>
+        <li>Sharpened skills in GitHub, SPARQL, HTML, JavaScript, and CSS.</li>
+      </ul>
+
+      <h4>Limitations</h4>
+      <ul>
+        <li>Correlations are more complex than GDP and population alone.</li>
+        <li>Migrating species are underrepresented; endemic focus favors islands.</li>
+        <li>Only terrestrial species considered; marine species are excluded.</li>
+      </ul>
+    </section>
   </main>
 </body>
 </html>
