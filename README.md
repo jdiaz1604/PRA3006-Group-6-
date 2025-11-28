@@ -18,7 +18,7 @@ All three datasets originate from Wikidata statements and are queried through QL
 
 | Dataset | Purpose | Key Wikidata properties | Query ID in `map.js` |
 | ------- | ------- | ----------------------- | -------------------- |
-| Endemic & endangered species | Returns the total number of endemic species for a country and the subset marked as endangered. | `P1082` (population), `P2874` (endemic to), `Q11394` (species) plus custom filters | `Q_END_EMD` |
+| Endemic & threatened species | Returns the total number of endemic species for a country and the subset marked as threatened (NT/VU/EN/CR) with category counts. | `P183` (endemic to), IUCN statuses (`Q719675`, `Q278113`, `Q96377276`, `Q219127`), `Q16521` (taxon), `Q7432` (rank=species) | `Q_END_EMD` |
 | Nominal GDP (USD) | Retrieves the latest statement tagged with currency USD (direct or converted). | `P2131` (GDP), `P38` (currency), `P3487` (normalized USD) | `Q_GDP` |
 | Population totals | Pulls the most recent population statement per country. | `P1082` (population), `P585` (point in time) | `Q_POP` |
 
@@ -66,7 +66,7 @@ Open `map.html` and interact with the continents to trigger the SPARQL downloads
 
 ## Correlation dashboard
 
-`correlations.html` reuses the same SPARQL tables but filters to countries with ≥ 50 endemic species, then computes the endangered fraction (`endangered endemic / total endemic`). Two D3 scatter plots compare this fraction against GDP (scaled to USD trillions) and population (billions). Tooltips reveal the raw values, and a least-squares regression line with summary statistics (`n`, slope, intercept, r, R²) appears below each chart so assessors can quickly interpret the direction and strength of the relationships.
+`correlations.html` reuses the same SPARQL tables but filters to countries with ≥ 50 endemic species, then computes the threatened fraction (`(NT+VU+EN+CR) / total endemic`). Two D3 scatter plots compare this fraction against GDP (scaled to USD trillions) and population (billions). Tooltips reveal the raw values, and a least-squares regression line with summary statistics (`n`, slope, intercept, r, R²) appears below each chart so assessors can quickly interpret the direction and strength of the relationships.
 
 ## Accessibility & responsiveness
 

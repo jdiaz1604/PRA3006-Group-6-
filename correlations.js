@@ -41,14 +41,18 @@ function combineDataset(endemicTable, gdpTable, populationTable) {
     const pRow = populationTable.get(isoNumeric);
     if (!gRow || !pRow) return;
     const total = +(endRow.totalEndemicSpecies || 0);
-    const endangered = +(endRow.endangeredEndemicSpecies || 0);
+    const nt = +(endRow.nearThreatenedEndemicSpecies || 0);
+    const vu = +(endRow.vulnerableEndemicSpecies || 0);
+    const en = +(endRow.endangeredEndemicSpecies || 0);
+    const cr = +(endRow.criticallyEndangeredEndemicSpecies || 0);
+    const threatened = nt + vu + en + cr;
     if (!Number.isFinite(total) || total < MIN_ENDEMIC || total === 0) return;
-    const fraction = endangered / total;
+    const fraction = threatened / total;
     rows.push({
       isoNumeric,
       countryLabel: endRow.countryLabel || gRow.countryLabel || pRow.countryLabel || `ISO ${isoNumeric}`,
       totalEndemic: total,
-      endangeredEndemic: endangered,
+      threatenedEndemic: threatened,
       fraction,
       gdpUSD: +(gRow.gdpUSD || 0),
       gdpYear: gRow.gdpYear || '',
@@ -191,9 +195,9 @@ function showTooltip(event, datum, cfg) {
   tooltip.style.top = `${event.pageY - 10}px`;
   tooltip.innerHTML = `
     <strong>${datum.countryLabel}</strong><br>
-    Endangered fraction: ${(datum.y * 100).toFixed(1)}%<br>
+    Threatened fraction: ${(datum.y * 100).toFixed(1)}%<br>
     ${cfg.tooltipLabel || cfg.xLabel}: ${cfg.tooltipFmt(datum)}<br>
-    Total endemic: ${fmtInt(datum.totalEndemic)} | Endangered: ${fmtInt(datum.endangeredEndemic)}
+    Total endemic: ${fmtInt(datum.totalEndemic)} | Threatened: ${fmtInt(datum.threatenedEndemic)}
   `;
 }
 
@@ -265,8 +269,11 @@ SELECT
   ?countryLabel
   ?iso3
   ?isoNum
-  (COALESCE(?allSpecies, 0)        AS ?totalEndemicSpecies)
-  (COALESCE(?endangeredSpecies, 0) AS ?endangeredEndemicSpecies)
+  (COALESCE(?allSpecies, 0)  AS ?totalEndemicSpecies)
+  (COALESCE(?ntSpecies, 0)   AS ?nearThreatenedEndemicSpecies)
+  (COALESCE(?vuSpecies, 0)   AS ?vulnerableEndemicSpecies)
+  (COALESCE(?enSpecies, 0)   AS ?endangeredEndemicSpecies)
+  (COALESCE(?crSpecies, 0)   AS ?criticallyEndangeredEndemicSpecies)
 WHERE {
   ?country wdt:P31 wd:Q6256 .
   OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
@@ -285,12 +292,48 @@ GROUP BY ?country
   }
 
   OPTIONAL {
-SELECT ?country (COUNT(DISTINCT ?sp2) AS ?endangeredSpecies)
+SELECT ?country (COUNT(DISTINCT ?spNT) AS ?ntSpecies)
 WHERE {
-  ?sp2 wdt:P31  wd:Q16521 ;
-       wdt:P105 wd:Q7432 ;
-       wdt:P141 wd:Q96377276 ;
-       wdt:P183 ?country .
+  ?spNT wdt:P31  wd:Q16521 ;
+        wdt:P105 wd:Q7432 ;
+        wdt:P141 wd:Q719675 ;
+        wdt:P183 ?country .
+  ?country wdt:P31 wd:Q6256 .
+}
+GROUP BY ?country
+  }
+
+  OPTIONAL {
+SELECT ?country (COUNT(DISTINCT ?spVU) AS ?vuSpecies)
+WHERE {
+  ?spVU wdt:P31  wd:Q16521 ;
+        wdt:P105 wd:Q7432 ;
+        wdt:P141 wd:Q278113 ;
+        wdt:P183 ?country .
+  ?country wdt:P31 wd:Q6256 .
+}
+GROUP BY ?country
+  }
+
+  OPTIONAL {
+SELECT ?country (COUNT(DISTINCT ?spEN) AS ?enSpecies)
+WHERE {
+  ?spEN wdt:P31  wd:Q16521 ;
+        wdt:P105 wd:Q7432 ;
+        wdt:P141 wd:Q96377276 ;
+        wdt:P183 ?country .
+  ?country wdt:P31 wd:Q6256 .
+}
+GROUP BY ?country
+  }
+
+  OPTIONAL {
+SELECT ?country (COUNT(DISTINCT ?spCR) AS ?crSpecies)
+WHERE {
+  ?spCR wdt:P31  wd:Q16521 ;
+        wdt:P105 wd:Q7432 ;
+        wdt:P141 wd:Q219127 ;
+        wdt:P183 ?country .
   ?country wdt:P31 wd:Q6256 .
 }
 GROUP BY ?country
@@ -384,12 +427,19 @@ function buildEndemicMap(json) {
     const isoNumStr = r.isoNum?.value;
     const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
     if (!Number.isFinite(isoInt)) continue;
+    const nt = +(r.nearThreatenedEndemicSpecies?.value || 0);
+    const vu = +(r.vulnerableEndemicSpecies?.value || 0);
+    const en = +(r.endangeredEndemicSpecies?.value || 0);
+    const cr = +(r.criticallyEndangeredEndemicSpecies?.value || 0);
     m.set(isoInt, {
       countryLabel: r.countryLabel?.value || '',
       iso3: r.iso3?.value || '',
       isoNum: isoNumStr,
       totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),
-      endangeredEndemicSpecies: +(r.endangeredEndemicSpecies?.value || 0)
+      nearThreatenedEndemicSpecies: nt,
+      vulnerableEndemicSpecies: vu,
+      endangeredEndemicSpecies: en,
+      criticallyEndangeredEndemicSpecies: cr
     });
   }
   return m;
