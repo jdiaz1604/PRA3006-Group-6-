@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Interactive Map · Endemic Species & Economy Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="map.html" class="active">Interactive map</a>
+      <a href="correlations.html">Correlations</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="intro">
+      <div>
+        <h2>Continent to country: biodiversity vs. macroeconomics.</h2>
+        <p>
+          Click a continent to view aggregated endemic species, endangered endemic species, nominal GDP, and population.
+          Once you have a regional overview, zoom into any country within that continent to inspect its latest metrics.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="startExploring">Jump to the map</button>
+          <a class="btn btn-outline" href="https://qlever.cs.uni-freiburg.de/wikidata" target="_blank" rel="noopener">About the data</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="explorer" id="explorer">
+      <div class="section-heading">
+        <div>
+          <h3>Continent → country drill-down</h3>
+          <p>Click a continent to see aggregated indicators, then select countries within that continent for a focused profile.</p>
+        </div>
+        <button class="btn btn-outline" id="backToWorld" disabled>Back to continents</button>
+      </div>
+
+      <div class="app">
+        <div class="map-wrap">
+  <svg class="map"></svg>
+  <div class="loading" id="loading" aria-hidden="true" style="display:none;"><div class="spinner"></div></div>
+  <div class="tooltip" id="tooltip"></div>
+  
+  <!-- Biome Legend -->
+  <div class="biome-legend">
+    <h4>Biome Colors</h4>
+    <div class="biome-item">
+      <div class="biome-color biome-forest"></div>
+      <span>Forest</span>
+    </div>
+    <div class="biome-item">
+      <div class="biome-color biome-rainforest"></div>
+      <span>Rainforest</span>
+    </div>
+    <div class="biome-item">
+      <div class="biome-color biome-grassland"></div>
+      <span>Grassland/Savanna</span>
+    </div>
+    <div class="biome-item">
+      <div class="biome-color biome-desert"></div>
+      <span>Desert</span>
+    </div>
+    <div class="biome-item">
+      <div class="biome-color biome-tundra"></div>
+      <span>Tundra</span>
+    </div>
+    <div class="biome-item">
+      <div class="biome-color biome-ice"></div>
+      <span>Ice/Polar</span>
+    </div>
+    <div class="biome-item">
+      <div class="biome-color biome-mountain"></div>
+      <span>Mountain</span>
+    </div>
+    <div class="biome-item">
+      <div class="biome-color biome-mediterranean"></div>
+      <span>Mediterranean</span>
+    </div>
+  </div>
+</div>
+
+        <aside class="sidebar">
+          <div class="panel-label" id="panelMode">Continent overview</div>
+          <h2 id="country-title">Select a continent</h2>
+          <p class="small" id="dataContext">Start at the continent level to unlock regional totals. Then click any highlighted country to drill into its latest data.</p>
+          <ul class="checklist">
+            <li>Total endemic species</li>
+            <li>Threatened endemic species (NT/VU/EN/CR)</li>
+            <li>Latest nominal GDP (USD)</li>
+            <li>Latest population</li>
+          </ul>
+
+          <div class="metric">
+            <div class="metric-label">Total endemic species</div>
+            <div class="metric-value" id="totalEndemic">—</div>
+            <div class="status" id="endemicStatus"></div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Threatened endemic species</div>
+            <div class="metric-value" id="endangeredEndemic">—</div>
+          </div>
+
+          <div id="chart" style="margin:10px 0 6px;"></div>
+          <div class="legend">Pie: Near threatened, vulnerable, endangered, critically endangered, other</div>
+
+          <div class="metric" style="margin-top:18px;">
+            <div class="metric-label">Latest nominal GDP (USD)</div>
+            <div class="metric-value" id="gdp">—</div>
+            <div class="small" id="gdpYear"></div>
+            <div class="status" id="gdpStatus"></div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-label">Latest population</div>
+            <div class="metric-value" id="population">—</div>
+            <div class="small" id="popYear"></div>
+            <div class="status" id="popStatus"></div>
+          </div>
+
+          <div class="note">Data source: QLever Wikidata (live). Tables are fetched once and filtered client-side.</div>
+          <div class="attribution">Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a>.</div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+  <script src="map.js"></script>
+</body>
+</html>

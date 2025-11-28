@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>About the Project - Endemic Species & Economy Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="about-page">
+  <header>
+    <h1>Endemic Species & Economy Explorer</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="map.html">Interactive map</a>
+      <a href="about.html" class="active">About</a>
+    </nav>
+  </header>
+
+  <main class="about-main">
+    <section>
+      <h2>About the Project</h2>
+      <p>
+        This project explores the relationship between biodiversity and economic metrics by combining
+        Wikidata biodiversity indicators with macroeconomic data. It surfaces continent and country-level
+        summaries for endemic species, endangered species, GDP, and population in an interactive, client-side visualization.
+      </p>
+      <h3>Data sources</h3>
+      <p>
+        All metrics are retrieved from Wikidata using SPARQL queries against the QLever endpoint and are rendered
+        in the browser using D3. Data is cached locally for fast comparisons.
+      </p>
+      <h3>How to use</h3>
+      <p>
+        Start at the interactive map to view continent rollups. Click a continent to drill down to individual
+        countries and compare endemic vs. endangered species alongside GDP and population figures.
+      </p>
+      <h3>Credits</h3>
+      <p>
+        Built as a client-side explorer and designed to be hosted on any static server. Source data and query
+        details are available in the project's README.
+      </p>
+      <p>
+        <a class="btn btn-primary" href="map.html">Open the interactive map</a>
+        <a class="btn btn-outline" href="index.html">Back to home</a>
+      </p>
+    </section>
+  </main>
+</body>
+</html>

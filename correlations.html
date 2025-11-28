@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Correlations · Endemic Species & Economy Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="viz">
+  <header>
+    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="map.html">Interactive map</a>
+      <a href="correlations.html" class="active">Correlations</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+
+  <main class="viz-main">
+    <section class="hero viz-hero">
+      <div>
+        <h2>Correlations between threatened fractions and socioeconomic indicators</h2>
+        <p>
+          Countries with at least 50 endemic species are plotted below. Each dot represents the share of threatened endemic species (NT/VU/EN/CR) relative to the country’s total endemic count.
+          Hover or tap to reveal the name and raw metrics. Trend lines show the direction and strength of the correlation with GDP and population.
+        </p>
+        <p id="vizStatus" class="small muted">Loading live data…</p>
+      </div>
+    </section>
+
+    <section class="viz-grid">
+      <article class="viz-card">
+        <div class="chart-header">
+          <h3>Threatened fraction vs GDP</h3>
+          <p>Each point is a country. X-axis: GDP (USD, trillions). Y-axis: threatened endemic ÷ total endemic.</p>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chartGDP" role="img" aria-label="Scatter plot showing threatened fraction vs GDP"></svg>
+          <div class="chart-stats" id="statsGDP"></div>
+        </div>
+      </article>
+
+      <article class="viz-card">
+        <div class="chart-header">
+          <h3>Threatened fraction vs Population</h3>
+          <p>Each point is a country. X-axis: population (billions). Y-axis: threatened endemic ÷ total endemic.</p>
+        </div>
+        <div class="chart-wrap">
+          <svg id="chartPOP" role="img" aria-label="Scatter plot showing threatened fraction vs population"></svg>
+          <div class="chart-stats" id="statsPOP"></div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div class="chart-tooltip" id="vizTooltip" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="correlations.js"></script>
+</body>
+</html>
