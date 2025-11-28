@@ -144,7 +144,35 @@ const NAME_OVERRIDES = new Map([
   // Polar territories
   ['French Southern Territories', 'Antarctica']
 ]);
+// Add these helper functions for biome coloring
+function getCountryISO3(country) {
+  const countryName = country.properties?.name;
+  const isoMap = {
+    'Russia': 'RUS', 'United States': 'USA', 'Canada': 'CAN', 'China': 'CHN', 'Australia': 'AUS',
+    'Brazil': 'BRA', 'India': 'IND', 'Argentina': 'ARG', 'Saudi Arabia': 'SAU', 'Egypt': 'EGY',
+    'South Africa': 'ZAF', 'France': 'FRA', 'Germany': 'DEU', 'United Kingdom': 'GBR', 'Japan': 'JPN',
+    'Mexico': 'MEX', 'Greenland': 'GRL', 'Antarctica': 'ATA', 'Libya': 'LBY', 'Algeria': 'DZA',
+    'Colombia': 'COL', 'Indonesia': 'IDN', 'Malaysia': 'MYS', 'Norway': 'NOR', 'Sweden': 'SWE',
+    'Finland': 'FIN', 'Iceland': 'ISL', 'Nepal': 'NPL', 'Bhutan': 'BTN', 'Switzerland': 'CHE',
+    'Austria': 'AUT', 'Spain': 'ESP', 'Italy': 'ITA', 'Greece': 'GRC', 'Turkey': 'TUR',
+    'Portugal': 'PRT', 'Kenya': 'KEN', 'Tanzania': 'TZA', 'Nigeria': 'NGA', 'Ethiopia': 'ETH'
+  };
+  return isoMap[countryName] || '';
+}
 
+function getCountryBiome(country) {
+  const countryName = country.properties?.name;
+  
+  // TUNDRA COUNTRIES - Force them to be visible
+  const tundraCountries = ['Russia', 'Canada', 'Norway', 'Sweden', 'Finland', 'Iceland'];
+  if (tundraCountries.includes(countryName)) {
+    console.log(`Tundra country found: ${countryName}`);
+    return 'tundra';
+  }
+  
+  // For now, return forest for everything else
+  return 'forest';
+}
 function assignContinents() {
   continentByCountryId.clear();
   countriesByContinent.clear();
@@ -214,31 +242,38 @@ function renderMap() {
   sphereLayer.attr('d', path({ type: 'Sphere' }));
 
   continentLayer.selectAll('path')
-    .data(continents, d => d.properties?.name || d.id)
-    .join(
-      enter => enter.append('path')
-        .attr('class', 'continent')
-        .attr('d', path)
-        .on('mousemove', handleMouseMove)
-        .on('mouseleave', handleMouseLeave)
-        .on('click', (event, d) => { event.stopPropagation(); handleContinentClick(d); }),
-      update => update.attr('d', path),
-      exit => exit.remove()
-    );
+  .data(continents, d => d.properties?.name || d.id)
+  .join(
+    enter => enter.append('path')
+      .attr('class', 'continent')
+      .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '') // ADD THIS LINE
+      .attr('d', path)
+      .on('mousemove', handleMouseMove)
+      .on('mouseleave', handleMouseLeave)
+      .on('click', (event, d) => { event.stopPropagation(); handleContinentClick(d); }),
+    update => update
+      .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '') // ADD THIS LINE
+      .attr('d', path),
+    exit => exit.remove()
+  );
 
   countryLayer.selectAll('path')
-    .data(countries, d => d.id)
-    .join(
-      enter => enter.append('path')
-        .attr('class', 'country')
-        .attr('d', path)
-        .on('mousemove', handleMouseMove)
-        .on('mouseleave', handleMouseLeave)
-        .on('click', (event, d) => { event.stopPropagation(); handleCountryClick(d); }),
-      update => update.attr('d', path),
-      exit => exit.remove()
-    );
-
+  .data(countries, d => d.id)
+  .join(
+    enter => enter.append('path')
+      .attr('class', 'country')
+      .attr('data-country', d => getCountryISO3(d)) // ADD THIS LINE
+      .attr('data-biome', d => getCountryBiome(d)) // ADD THIS LINE
+      .attr('d', path)
+      .on('mousemove', handleMouseMove)
+      .on('mouseleave', handleMouseLeave)
+      .on('click', (event, d) => { event.stopPropagation(); handleCountryClick(d); }),
+    update => update
+      .attr('data-country', d => getCountryISO3(d)) // ADD THIS LINE
+      .attr('data-biome', d => getCountryBiome(d)) // ADD THIS LINE
+      .attr('d', path),
+    exit => exit.remove()
+  );
   const mesh = topojson.mesh(worldTopo, worldTopo.objects.countries, (a, b) => a !== b);
   borderLayer.attr('d', path(mesh));
 
@@ -246,6 +281,19 @@ function renderMap() {
   svg.call(zoomBehavior.transform, currentTransform);
   updateContinentLayerState();
   updateCountryLayerState();
+  // DEBUG: Check if tundra countries are getting the right biome
+setTimeout(() => {
+  const tundraCountries = ['Russia', 'Canada', 'Norway', 'Sweden', 'Finland'];
+  d3.selectAll('.country').each(function(d) {
+    const name = d.properties?.name;
+    if (tundraCountries.includes(name)) {
+      const biome = d3.select(this).attr('data-biome');
+      console.log(`Country: ${name}, Biome: ${biome}`);
+      // Force the color
+      d3.select(this).style('fill', '#ff0000');
+    }
+  });
+}, 2000);
 }
 
 function handleMouseMove(event, feature) {
@@ -255,12 +303,30 @@ function handleMouseMove(event, feature) {
   $tooltip.style.left = (event.offsetX + 14) + 'px';
   $tooltip.style.top = (event.offsetY + 14) + 'px';
   $tooltip.textContent = name;
+  
+  // Enhanced styling for continent tooltips
+  if (feature.geometry && feature.geometry.type === 'MultiPolygon' || 
+      feature.properties?.name && continents.some(c => c.properties?.name === feature.properties?.name)) {
+    $tooltip.style.background = 'var(--accent)';
+    $tooltip.style.color = 'var(--bg)';
+    $tooltip.style.fontWeight = '600';
+    $tooltip.style.borderColor = 'var(--accent-strong)';
+  } else {
+    $tooltip.style.background = '#0e1530';
+    $tooltip.style.color = 'var(--ink)';
+    $tooltip.style.fontWeight = 'normal';
+    $tooltip.style.borderColor = '#1f2a50';
+  }
 }
 
 function handleMouseLeave() {
   $tooltip.style.opacity = 0;
+  // Reset tooltip styles
+  $tooltip.style.background = '#0e1530';
+  $tooltip.style.color = 'var(--ink)';
+  $tooltip.style.fontWeight = 'normal';
+  $tooltip.style.borderColor = '#1f2a50';
 }
-
 async function handleContinentClick(feature) {
   if (!feature || inFlight) return;
   inFlight = true;
@@ -945,5 +1011,27 @@ async function boot() {
     handleInitError(err);
   }
 }
-
+// Simple debug - run this after the map loads
+setTimeout(() => {
+  console.log("=== DEBUG: Checking countries ===");
+  
+  // Get all country paths
+  const countries = d3.selectAll('.country');
+  console.log(`Total countries: ${countries.size()}`);
+  
+  // Check a few specific countries
+  const testCountries = ['Russia', 'Canada', 'Norway', 'Sweden', 'Finland'];
+  
+  countries.each(function(d) {
+    const name = d.properties?.name;
+    if (testCountries.includes(name)) {
+      console.log(`Found: ${name}`);
+      // Force it to be red
+      d3.select(this).style('fill', 'red');
+      console.log(` - Set ${name} to red`);
+    }
+  });
+  
+  console.log("=== DEBUG END ===");
+}, 3000);
 boot();
