@@ -75,6 +75,11 @@ main { display:flex; flex-direction:column; gap:40px; }
 .feature-card { background:var(--panel); border:1px solid #0f4626; border-radius:16px; padding:18px; }
 .feature-card h4 { margin:0 0 8px; font-size:16px; }
 .feature-card p { margin:0; color:var(--muted); font-size:14px; }
+.content-card { max-width:960px; margin:24px auto 48px; background:var(--panel); border:1px solid #0f4626; border-radius:18px; padding:24px 28px; color:var(--ink); line-height:1.6; }
+.content-card h3 { margin-top:0; margin-bottom:12px; font-size:22px; }
+.content-card h4 { margin:16px 0 8px; font-size:18px; }
+.content-card p { margin:8px 0; color:var(--muted); }
+.content-card ul { margin:8px 0 12px 20px; color:var(--muted); }
 
 .explorer { padding:0 0 32px; }
 .section-heading { display:flex; justify-content:space-between; align-items:flex-start; padding:0 24px 16px; gap:16px; flex-wrap:wrap; }
@@ -87,10 +92,13 @@ main { display:flex; flex-direction:column; gap:40px; }
   .sidebar { min-height:360px; border-left:none; border-top:1px solid #0f4626; }
 }
 
-.map-wrap { position:relative; background:#050a1c; }
+.map-shell { padding:24px; display:flex; justify-content:center; }
+.map-panel { width:100%; max-width:1300px; background:var(--panel-dark); border:1px solid #0f4626; border-radius:22px; padding:14px; box-shadow:0 12px 30px rgba(0,0,0,0.28); }
+.map-toolbar { display:flex; justify-content:space-between; align-items:center; padding:0 8px 10px; }
+.map-wrap { position:relative; background:#050a1c; border-radius:16px 0 0 16px; overflow:hidden; }
 .map { width:100%; height:100%; display:block; }
 
-.sidebar { background:var(--panel); padding:22px 24px 32px; border-left:1px solid #0f4626; display:flex; flex-direction:column; gap:14px; }
+.sidebar { background:var(--panel); padding:22px 24px 32px; border-left:1px solid #0f4626; display:flex; flex-direction:column; gap:14px; border-radius:0 16px 16px 0; }
 .panel-label { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:4px; }
 .sidebar h2 { margin:0 0 4px; font-size:22px; }
 .sidebar .small { color:var(--muted); font-size:13px; margin:0; }
