@@ -902,74 +902,90 @@ function buildPopulationMap(json) {                                     // Build
   return m;
 }
 
+//LOADING SIGN
+
 function showLoading(on) {                                       // Toggles the loading indicator visibility (hide/show)
   $loading.style.display = on ? 'flex' : 'none';                 // If "on" is true, show it; if false, hide it
   $loading.setAttribute('aria-hidden', on ? 'false' : 'true');   // Update accessibility attribute
 }
 
-function setPanelMode(text) {
-  panelModeEl.textContent = text;
+//PANEL UPDATES
+
+function setPanelMode(text) {           // Sets the panel mode text (either "Continent overview" or "Country profile") (above the pie chart part)
+  panelModeEl.textContent = text;       // Update the text content of the panel mode element
 }
 
-function setTitle(text) {
-  document.getElementById('country-title').textContent = text || 'Select a continent';
+//TITLE UPDATES
+
+function setTitle(text) {                                                                 // Sets the title of the panel (either continent name or country name)
+  document.getElementById('country-title').textContent = text || 'Select a continent';    // Use provided text or a default instruction
 }
 
-function clearPanel() {
+//DATA DISPLAY UPDATES
+
+function clearPanel() {                                       // Reset all displayed values when nothing is selected
   setEndemic({ status: null });
   setGDP({ status: null });
   setPopulation({ status: null });
-  drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-  setStatuses('', '', '');
+  drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 }); // Draw an empty pie chart
+  setStatuses('', '', '');                                    // Clear all three status messages
 }
 
-function setStatuses(endemicMsg, gdpMsg, popMsg) {
+//STATUS UPDATES
+
+function setStatuses(endemicMsg, gdpMsg, popMsg) {         // Sets individual status messages for endemic, GDP, and population data
   const es = document.getElementById('endemicStatus');
   const gs = document.getElementById('gdpStatus');
   const ps = document.getElementById('popStatus');
-  es.textContent = endemicMsg || '';
-  gs.textContent = gdpMsg || '';
-  ps.textContent = popMsg || '';
-  [es, gs, ps].forEach(el => el.classList.remove('err'));
+  es.textContent = endemicMsg || '';                       // Update endemic status message
+  gs.textContent = gdpMsg || '';                           // Update GDP status message
+  ps.textContent = popMsg || '';                           // Update population status message
+  [es, gs, ps].forEach(el => el.classList.remove('err'));  // Remove error styling from all status elements
 }
 
-function setAllStatuses(message) {
+//IF ERROR IN ANY DATA REQUEST
+
+function setAllStatuses(message) {                                                            // Sets the same error message for all three data statuses
   const es = document.getElementById('endemicStatus');
   const gs = document.getElementById('gdpStatus');
   const ps = document.getElementById('popStatus');
-  [es, gs, ps].forEach(el => { el.textContent = message || ''; el.classList.add('err'); });
+  [es, gs, ps].forEach(el => { el.textContent = message || ''; el.classList.add('err'); });   // Add the error styling class to all status elements
 }
 
-function applyEndemicResult(res) {
-  const status = document.getElementById('endemicStatus');
-  if (res.status === 'ok') {
-    setEndemic(res);
-    drawEndemicChart({
-      total: res.totalEndemicSpecies,
-      nt: res.nearThreatened,
-      vu: res.vulnerable,
-      en: res.endangered,
-      cr: res.criticallyEndangered
+//APPLY DATA RESULTS FOR PIE CHART (res.status === 'ok' means data received successfully; 'empty' means no data available; 'error' means request failed)
+
+function applyEndemicResult(res) {                               // Applies the result of the endemic species data request to the panel
+  const status = document.getElementById('endemicStatus');       // Get the status element for endemic data
+  if (res.status === 'ok') {                                     // If the request was successful
+    setEndemic(res);                                             // Update the endemic data display
+    drawEndemicChart({                                           // Draw the pie chart with the received data
+      total: res.totalEndemicSpecies,                            // total endemic species
+      nt: res.nearThreatened,                                    // near-threatened species
+      vu: res.vulnerable,                                        // vulnerable species
+      en: res.endangered,                                        // endangered species
+      cr: res.criticallyEndangered                               // critically endangered species
     });
-    status.textContent = '';
-    status.classList.remove('err');
-  } else if (res.status === 'empty') {
-    setEndemic({ status: 'empty' });
-    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-    status.textContent = 'No data';
-    status.classList.remove('err');
-  } else if (res.status === 'error') {
-    setEndemic({ status: 'error' });
-    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-    status.textContent = 'Request failed';
-    status.classList.add('err');
-  } else {
+    status.textContent = '';                                     // Clear any status message
+    status.classList.remove('err');                              // Remove error styling
+  } else if (res.status === 'empty') {                           // If there is no data available
+    setEndemic({ status: 'empty' });                             // Update the endemic data display to show no data
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });  // Draw an empty pie chart
+    status.textContent = 'No data';                              // Set status message to indicate no data
+    status.classList.remove('err');                              // Remove error styling
+  } else if (res.status === 'error') {                           // If there was an error during the request
+    setEndemic({ status: 'error' });                             // Update the endemic data display to show an error
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });  // Draw an empty pie chart
+    status.textContent = 'Request failed';                       // Set status message to indicate request failure
+    status.classList.add('err');                                 // Add error styling
+  } else {                                                       // For any other unexpected status
     setEndemic({ status: null });
     drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
     status.textContent = '';
     status.classList.remove('err');
   }
 }
+
+//APPLY DATA RESULTS FOR GDP AND POPULATION (res.status === 'ok' means data received successfully; 'empty' means no data available; 'error' means request failed)
 
 function applyGdpResult(res) {
   const status = document.getElementById('gdpStatus');
