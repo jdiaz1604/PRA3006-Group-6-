@@ -760,7 +760,7 @@ WHERE {
 GROUP BY ?country
   }
 }
-ORDER BY DESC(?totalEndemicSpecies) # Order final results by total endemic species count 
+ORDER BY DESC(?totalEndemicSpecies) 
 `;
 
 const Q_GDP = `                                         # SPARQL query to get latest GDP data for countries
@@ -779,25 +779,25 @@ SELECT
   ?gdpUSD                                                                                 # GDP in US dollars (latest available)
   ?gdpYear                                                                                # Year of the GDP data
 WHERE {                                                                                   # Begin data retrieval block
-  ?country wdt:P31 wd:Q6256 .                                                             # Select only entities that are instances of "country" (Q6256)
-  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }     # Get the English label for each country
-  OPTIONAL { ?country wdt:P298 ?iso3 }                                                    # Get the 3-letter ISO code for each country
-  OPTIONAL { ?country wdt:P299 ?isoNum }                                                  # Get the numeric ISO code for each country
+  ?country wdt:P31 wd:Q6256 .                                                             
+  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }     
+  OPTIONAL { ?country wdt:P298 ?iso3 }                                                    
+  OPTIONAL { ?country wdt:P299 ?isoNum }                                                  
 
   {
-SELECT ?country (MAX(?date) AS ?latestDate)       # Subquery to find the latest date for GDP data per country
+SELECT ?country (MAX(?date) AS ?latestDate)
 WHERE {
-  ?country wdt:P31 wd:Q6256 ;     # Select only countries
-           p:P2131 ?st .          # Access the GDP property statements
-  ?st pq:P585 ?date .             # Get the date qualifier for each GDP statement
+  ?country wdt:P31 wd:Q6256 ;
+           p:P2131 ?st .
+  ?st pq:P585 ?date .
 }
-GROUP BY ?country                 # Group results by country to find the latest date
+GROUP BY ?country
   }
 
-  ?country p:P2131 ?st2 .               # Access the GDP property statements again to get the full statement
-  ?st2 pq:P585 ?latestDate ;            # Get the date qualifier matching the latest date
-   ps:P2131 ?gdpUSD .                   # Get the GDP value in USD
-  BIND(YEAR(?latestDate) AS ?gdpYear)   # Extract the year from the latest date
+  ?country p:P2131 ?st2 .
+  ?st2 pq:P585 ?latestDate ;
+   ps:P2131 ?gdpUSD .
+  BIND(YEAR(?latestDate) AS ?gdpYear)
 }
 ORDER BY DESC(?gdpUSD)
 `;
@@ -824,49 +824,49 @@ WHERE {
   OPTIONAL { ?country wdt:P299 ?isoNum }
 
   {
-SELECT ?country (MAX(?date) AS ?latestDate)     # Subquery to find the latest date for population data per country
+SELECT ?country (MAX(?date) AS ?latestDate)
 WHERE {
-  ?country wdt:P31 wd:Q6256 ;        # Select only countries
-           p:P1082 ?popStmt .        # Access the population property statements
-  ?popStmt pq:P585 ?date .           # Get the date qualifier for each population statement
+  ?country wdt:P31 wd:Q6256 ;
+           p:P1082 ?popStmt .
+  ?popStmt pq:P585 ?date .
 }
 GROUP BY ?country
   }
 
-  ?country p:P1082 ?popStmt2 .          # Access the population property statements again to get the full statement
-  ?popStmt2 pq:P585 ?latestDate ;       # Get the date qualifier matching the latest date
-        ps:P1082 ?population .          # Get the population value
-  BIND(YEAR(?latestDate) AS ?popYear)   # Extract the year from the latest date
+  ?country p:P1082 ?popStmt2 .
+  ?popStmt2 pq:P585 ?latestDate ;
+        ps:P1082 ?population .
+  BIND(YEAR(?latestDate) AS ?popYear)
 }
 ORDER BY DESC(?population)
 `;
 
-function buildEndemicMap(json) {
-  const m = new Map();
-  const rows = json?.results?.bindings || [];
-  for (const r of rows) {
-    const isoNumStr = r.isoNum?.value;
-    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
-    if (!Number.isFinite(isoInt)) continue;
-    const nt = +(r.nearThreatenedEndemicSpecies?.value || 0);
-    const vu = +(r.vulnerableEndemicSpecies?.value || 0);
-    const en = +(r.endangeredEndemicSpecies?.value || 0);
-    const cr = +(r.criticallyEndangeredEndemicSpecies?.value || 0);
-    m.set(isoInt, {
-      countryLabel: r.countryLabel?.value || '',
-      iso3: r.iso3?.value || '',
-      isoNum: isoNumStr,
-      totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),
-      nearThreatenedEndemicSpecies: nt,
-      vulnerableEndemicSpecies: vu,
-      endangeredEndemicSpecies: en,
-      criticallyEndangeredEndemicSpecies: cr
+function buildEndemicMap(json) {                                        // Builds a Map from the SPARQL JSON results for endemic species (converts SPARQL results into a JavaScript Map)
+  const m = new Map();                                                  // Initialize an empty Map to hold the endemic species data
+  const rows = json?.results?.bindings || [];                           // Extract the rows from the SPARQL JSON results
+  for (const r of rows) {                                               // Loop through each row returned by the query
+    const isoNumStr = r.isoNum?.value;                                  // Get the ISO numeric code as a string
+    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;           // Convert the ISO numeric code to an integer
+    if (!Number.isFinite(isoInt)) continue;                             // Skip rows with invalid ISO numeric codes
+    const nt = +(r.nearThreatenedEndemicSpecies?.value || 0);           // Read near-threatened count or fall back to 0
+    const vu = +(r.vulnerableEndemicSpecies?.value || 0);               // Read vulnerable count or fall back to 0
+    const en = +(r.endangeredEndemicSpecies?.value || 0);               // Read endangered count or fall back to 0
+    const cr = +(r.criticallyEndangeredEndemicSpecies?.value || 0);     // Read critically endangered count or fall back to 0
+    m.set(isoInt, {                                                     // Store the data in the Map using the ISO numeric code as the key
+      countryLabel: r.countryLabel?.value || '',                        // country name
+      iso3: r.iso3?.value || '',                                        // 3-letter ISO code
+      isoNum: isoNumStr,                                                // numeric ISO code
+      totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),        // total endemic species count or fall back to 0
+      nearThreatenedEndemicSpecies: nt,                                 // near-threatened count (storaged separately for convenience)
+      vulnerableEndemicSpecies: vu,                                     // vulnerable count (storaged separately for convenience)
+      endangeredEndemicSpecies: en,                                     // endangered count (storaged separately for convenience)
+      criticallyEndangeredEndemicSpecies: cr                            // critically endangered count (storaged separately for convenience)
     });
   }
-  return m;
+  return m;                                                             // Return the constructed Map
 }
 
-function buildGdpMap(json) {
+function buildGdpMap(json) {                                            // Builds a Map from the SPARQL JSON results for GDP data (the same as above but for GDP)
   const m = new Map();
   const rows = json?.results?.bindings || [];
   for (const r of rows) {
@@ -884,7 +884,7 @@ function buildGdpMap(json) {
   return m;
 }
 
-function buildPopulationMap(json) {
+function buildPopulationMap(json) {                                     // Builds a Map from the SPARQL JSON results for population data (the same as above but for population)
   const m = new Map();
   const rows = json?.results?.bindings || [];
   for (const r of rows) {
@@ -902,9 +902,9 @@ function buildPopulationMap(json) {
   return m;
 }
 
-function showLoading(on) {
-  $loading.style.display = on ? 'flex' : 'none';
-  $loading.setAttribute('aria-hidden', on ? 'false' : 'true');
+function showLoading(on) {                                       // Toggles the loading indicator visibility (hide/show)
+  $loading.style.display = on ? 'flex' : 'none';                 // If "on" is true, show it; if false, hide it
+  $loading.setAttribute('aria-hidden', on ? 'false' : 'true');   // Update accessibility attribute
 }
 
 function setPanelMode(text) {
