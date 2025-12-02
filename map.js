@@ -614,40 +614,42 @@ function delayWithJitter(base, attempt) {
   return new Promise(r => setTimeout(r, wait));
 }
 
-const Q_END_EMD = `
-PREFIX wd:   <http://www.wikidata.org/entity/>
-PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+//Query for endemic species + IUCN categories
+const Q_END_EMD = `                                    #This creates a JavaScript string that contains a SPARQL query; the query fetches all species data
+PREFIX wd:   <http://www.wikidata.org/entity/>         #This tells SPARQL where Wikidata items should be derived from
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>    #This tells SPARQL where direct Wikidata properties shoud be derived from
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>   #This gives access to standard RDF features, including labels
 
-SELECT
-  ?country
-  ?countryLabel
-  ?iso3
-  ?isoNum
-  (COALESCE(?allSpecies, 0)  AS ?totalEndemicSpecies)
-  (COALESCE(?ntSpecies, 0)   AS ?nearThreatenedEndemicSpecies)
-  (COALESCE(?vuSpecies, 0)   AS ?vulnerableEndemicSpecies)
-  (COALESCE(?enSpecies, 0)   AS ?endangeredEndemicSpecies)
-  (COALESCE(?crSpecies, 0)   AS ?criticallyEndangeredEndemicSpecies)
-WHERE {
-  ?country wdt:P31 wd:Q6256 .
-  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
-  OPTIONAL { ?country wdt:P298 ?iso3 }
-  OPTIONAL { ?country wdt:P299 ?isoNum }
+SELECT               #Everything below defines what pieces of data we want back from Wikidata
+  ?country           #We want the Wikidata ID of each country
+  ?countryLabel      # country name (in English)
+  ?iso3              # code for the country (3-letter ISO code)
+  ?isoNum            # numeric code 
+  (COALESCE(?allSpecies, 0)  AS ?totalEndemicSpecies)                       # If total endemic species exist, take them; otherwise use 0
+  (COALESCE(?ntSpecies, 0)   AS ?nearThreatenedEndemicSpecies)              #same as above for NT species
+  (COALESCE(?vuSpecies, 0)   AS ?vulnerableEndemicSpecies)                  # same as above for VU species
+  (COALESCE(?enSpecies, 0)   AS ?endangeredEndemicSpecies)                  # same as above for EN species
+  (COALESCE(?crSpecies, 0)   AS ?criticallyEndangeredEndemicSpecies)        # same as above for CR species
 
-  OPTIONAL {
-SELECT ?country (COUNT(DISTINCT ?sp) AS ?allSpecies)
-WHERE {
-  ?sp wdt:P31 wd:Q16521 ;
-      wdt:P105 wd:Q7432 ;
-      wdt:P183 ?country .
-  ?country wdt:P31 wd:Q6256 .
+WHERE {                                                                                         # Begin the data retrieval block (the main query begins here)
+  ?country wdt:P31 wd:Q6256 .                                                                   # Select only entities that are instances of "country" (Q6256)
+  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }           # Get the English label for each country
+  OPTIONAL { ?country wdt:P298 ?iso3 }                                                          # Get the 3-letter ISO code for each country
+  OPTIONAL { ?country wdt:P299 ?isoNum }                                                        # Get the numeric ISO code for each country
+
+  OPTIONAL {                                                     # Begin optional block to count all endemic species 
+SELECT ?country (COUNT(DISTINCT ?sp) AS ?allSpecies)             #For each country, count distinct species that are endemic
+WHERE {                                                          # Begin data retrieval for endemic species
+  ?sp wdt:P31 wd:Q16521 ;         # Select organisms that are taxa
+      wdt:P105 wd:Q7432 ;         # Make sure they are at species rank
+      wdt:P183 ?country .         # Keep only species marked as “endemic to this country.”
+  ?country wdt:P31 wd:Q6256 .     # Confirm again that this is a country
 }
-GROUP BY ?country
+GROUP BY ?country                 # Group results by country to get counts (ensures the count happens per country)
   }
 
-  OPTIONAL {
-SELECT ?country (COUNT(DISTINCT ?spNT) AS ?ntSpecies)
+  OPTIONAL {                                             #Begin optional block to count Near Threatened species
+SELECT ?country (COUNT(DISTINCT ?spNT) AS ?ntSpecies)    #For each country, count distinct species that are Near Threatened
 WHERE {
   ?spNT wdt:P31  wd:Q16521 ;
         wdt:P105 wd:Q7432 ;
@@ -658,7 +660,7 @@ WHERE {
 GROUP BY ?country
   }
 
-  OPTIONAL {
+  OPTIONAL {                                             #Blocks to count VU, EN, CR species follow same pattern
 SELECT ?country (COUNT(DISTINCT ?spVU) AS ?vuSpecies)
 WHERE {
   ?spVU wdt:P31  wd:Q16521 ;
@@ -694,29 +696,29 @@ WHERE {
 GROUP BY ?country
   }
 }
-ORDER BY DESC(?totalEndemicSpecies)
+ORDER BY DESC(?totalEndemicSpecies) 
 `;
 
-const Q_GDP = `
-PREFIX wd:   <http://www.wikidata.org/entity/>
-PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
-PREFIX p:    <http://www.wikidata.org/prop/>
-PREFIX ps:   <http://www.wikidata.org/prop/statement/>
-PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+const Q_GDP = `                                         # SPARQL query to get latest GDP data for countries
+PREFIX wd:   <http://www.wikidata.org/entity/>          # This tells SPARQL where Wikidata items should be derived from
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>     # This tells SPARQL where direct Wikidata properties shoud be derived from
+PREFIX p:    <http://www.wikidata.org/prop/>            # This gives access to Wikidata properties in statement form
+PREFIX ps:   <http://www.wikidata.org/prop/statement/>  # This gives access to the main values of Wikidata statements
+PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>  # This gives access to qualifiers on Wikidata statements
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>    # This gives access to standard RDF features, including labels
 
 SELECT
   ?country
   ?countryLabel
   ?iso3
   ?isoNum
-  ?gdpUSD
-  ?gdpYear
-WHERE {
-  ?country wdt:P31 wd:Q6256 .
-  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
-  OPTIONAL { ?country wdt:P298 ?iso3 }
-  OPTIONAL { ?country wdt:P299 ?isoNum }
+  ?gdpUSD                                                                                 # GDP in US dollars (latest available)
+  ?gdpYear                                                                                # Year of the GDP data
+WHERE {                                                                                   # Begin data retrieval block
+  ?country wdt:P31 wd:Q6256 .                                                             
+  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }     
+  OPTIONAL { ?country wdt:P298 ?iso3 }                                                    
+  OPTIONAL { ?country wdt:P299 ?isoNum }                                                  
 
   {
 SELECT ?country (MAX(?date) AS ?latestDate)
@@ -736,21 +738,21 @@ GROUP BY ?country
 ORDER BY DESC(?gdpUSD)
 `;
 
-const Q_POP = `
-PREFIX wd:   <http://www.wikidata.org/entity/>
-PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
-PREFIX p:    <http://www.wikidata.org/prop/>
-PREFIX ps:   <http://www.wikidata.org/prop/statement/>
-PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+const Q_POP = `                                                # SPARQL query to get latest population data for countries
+PREFIX wd:   <http://www.wikidata.org/entity/>                 # This tells SPARQL where Wikidata items should be derived from
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>            # This tells SPARQL where direct Wikidata properties shoud be derived from
+PREFIX p:    <http://www.wikidata.org/prop/>                   # This gives access to Wikidata properties in statement form
+PREFIX ps:   <http://www.wikidata.org/prop/statement/>         # This gives access to the main values of Wikidata statements
+PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>         # This gives access to qualifiers on Wikidata statements
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>           # This gives access to standard RDF features, including labels
 
 SELECT
   ?country
   ?countryLabel
   ?iso3
   ?isoNum
-  ?population
-  ?popYear
+  ?population          # Population (latest available)
+  ?popYear             # Year of the population data
 WHERE {
   ?country wdt:P31 wd:Q6256 .
   OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
@@ -775,32 +777,32 @@ GROUP BY ?country
 ORDER BY DESC(?population)
 `;
 
-function buildEndemicMap(json) {
-  const m = new Map();
-  const rows = json?.results?.bindings || [];
-  for (const r of rows) {
-    const isoNumStr = r.isoNum?.value;
-    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
-    if (!Number.isFinite(isoInt)) continue;
-    const nt = +(r.nearThreatenedEndemicSpecies?.value || 0);
-    const vu = +(r.vulnerableEndemicSpecies?.value || 0);
-    const en = +(r.endangeredEndemicSpecies?.value || 0);
-    const cr = +(r.criticallyEndangeredEndemicSpecies?.value || 0);
-    m.set(isoInt, {
-      countryLabel: r.countryLabel?.value || '',
-      iso3: r.iso3?.value || '',
-      isoNum: isoNumStr,
-      totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),
-      nearThreatenedEndemicSpecies: nt,
-      vulnerableEndemicSpecies: vu,
-      endangeredEndemicSpecies: en,
-      criticallyEndangeredEndemicSpecies: cr
+function buildEndemicMap(json) {                                        // Builds a Map from the SPARQL JSON results for endemic species (converts SPARQL results into a JavaScript Map)
+  const m = new Map();                                                  // Initialize an empty Map to hold the endemic species data
+  const rows = json?.results?.bindings || [];                           // Extract the rows from the SPARQL JSON results
+  for (const r of rows) {                                               // Loop through each row returned by the query
+    const isoNumStr = r.isoNum?.value;                                  // Get the ISO numeric code as a string
+    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;           // Convert the ISO numeric code to an integer
+    if (!Number.isFinite(isoInt)) continue;                             // Skip rows with invalid ISO numeric codes
+    const nt = +(r.nearThreatenedEndemicSpecies?.value || 0);           // Read near-threatened count or fall back to 0
+    const vu = +(r.vulnerableEndemicSpecies?.value || 0);               // Read vulnerable count or fall back to 0
+    const en = +(r.endangeredEndemicSpecies?.value || 0);               // Read endangered count or fall back to 0
+    const cr = +(r.criticallyEndangeredEndemicSpecies?.value || 0);     // Read critically endangered count or fall back to 0
+    m.set(isoInt, {                                                     // Store the data in the Map using the ISO numeric code as the key
+      countryLabel: r.countryLabel?.value || '',                        // country name
+      iso3: r.iso3?.value || '',                                        // 3-letter ISO code
+      isoNum: isoNumStr,                                                // numeric ISO code
+      totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),        // total endemic species count or fall back to 0
+      nearThreatenedEndemicSpecies: nt,                                 // near-threatened count (storaged separately for convenience)
+      vulnerableEndemicSpecies: vu,                                     // vulnerable count (storaged separately for convenience)
+      endangeredEndemicSpecies: en,                                     // endangered count (storaged separately for convenience)
+      criticallyEndangeredEndemicSpecies: cr                            // critically endangered count (storaged separately for convenience)
     });
   }
-  return m;
+  return m;                                                             // Return the constructed Map
 }
 
-function buildGdpMap(json) {
+function buildGdpMap(json) {                                            // Builds a Map from the SPARQL JSON results for GDP data (the same as above but for GDP)
   const m = new Map();
   const rows = json?.results?.bindings || [];
   for (const r of rows) {
@@ -818,7 +820,7 @@ function buildGdpMap(json) {
   return m;
 }
 
-function buildPopulationMap(json) {
+function buildPopulationMap(json) {                                     // Builds a Map from the SPARQL JSON results for population data (the same as above but for population)
   const m = new Map();
   const rows = json?.results?.bindings || [];
   for (const r of rows) {
@@ -836,9 +838,9 @@ function buildPopulationMap(json) {
   return m;
 }
 
-function showLoading(on) {
-  $loading.style.display = on ? 'flex' : 'none';
-  $loading.setAttribute('aria-hidden', on ? 'false' : 'true');
+function showLoading(on) {                                       // Toggles the loading indicator visibility (hide/show)
+  $loading.style.display = on ? 'flex' : 'none';                 // If "on" is true, show it; if false, hide it
+  $loading.setAttribute('aria-hidden', on ? 'false' : 'true');   // Update accessibility attribute
 }
 
 function setPanelMode(text) {
