@@ -1099,8 +1099,8 @@ function clearPanel() {
   setEndemic({ status: null });
   setGDP({ status: null });
   setPopulation({ status: null });
-  drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-  setStatuses('', '', '');
+  drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 }); // Draw an empty pie chart
+  setStatuses('', '', '');                                    // Clear all three status messages
 }
 
 // Updates status messages
@@ -1108,10 +1108,10 @@ function setStatuses(endemicMsg, gdpMsg, popMsg) {
   const es = document.getElementById('endemicStatus');
   const gs = document.getElementById('gdpStatus');
   const ps = document.getElementById('popStatus');
-  es.textContent = endemicMsg || '';
-  gs.textContent = gdpMsg || '';
-  ps.textContent = popMsg || '';
-  [es, gs, ps].forEach(el => el.classList.remove('err'));
+  es.textContent = endemicMsg || '';                       // Update endemic status message
+  gs.textContent = gdpMsg || '';                           // Update GDP status message
+  ps.textContent = popMsg || '';                           // Update population status message
+  [es, gs, ps].forEach(el => el.classList.remove('err'));  // Remove error styling from all status elements
 }
 
 // Sets all status messages to error
@@ -1119,7 +1119,7 @@ function setAllStatuses(message) {
   const es = document.getElementById('endemicStatus');
   const gs = document.getElementById('gdpStatus');
   const ps = document.getElementById('popStatus');
-  [es, gs, ps].forEach(el => { el.textContent = message || ''; el.classList.add('err'); });
+  [es, gs, ps].forEach(el => { el.textContent = message || ''; el.classList.add('err'); });   // Add the error styling class to all status elements
 }
 
 // Updates endemic data display based on result
@@ -1134,19 +1134,19 @@ function applyEndemicResult(res) {
       en: res.endangered,
       cr: res.criticallyEndangered
     });
-    status.textContent = '';
-    status.classList.remove('err');
-  } else if (res.status === 'empty') {
-    setEndemic({ status: 'empty' });
-    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-    status.textContent = 'No data';
-    status.classList.remove('err');
-  } else if (res.status === 'error') {
-    setEndemic({ status: 'error' });
-    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-    status.textContent = 'Request failed';
-    status.classList.add('err');
-  } else {
+    status.textContent = '';                                     // Clear any status message
+    status.classList.remove('err');                              // Remove error styling
+  } else if (res.status === 'empty') {                           // If there is no data available
+    setEndemic({ status: 'empty' });                             // Update the endemic data display to show no data
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });  // Draw an empty pie chart
+    status.textContent = 'No data';                              // Set status message to indicate no data
+    status.classList.remove('err');                              // Remove error styling
+  } else if (res.status === 'error') {                           // If there was an error during the request
+    setEndemic({ status: 'error' });                             // Update the endemic data display to show an error
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });  // Draw an empty pie chart
+    status.textContent = 'Request failed';                       // Set status message to indicate request failure
+    status.classList.add('err');                                 // Add error styling
+  } else {                                                       // For any other unexpected status
     setEndemic({ status: null });
     drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
     status.textContent = '';
@@ -1156,9 +1156,9 @@ function applyEndemicResult(res) {
 
 // Updates GDP data display
 function applyGdpResult(res) {
-  const status = document.getElementById('gdpStatus');
-  if (res.status === 'ok') {
-    setGDP(res);
+  const status = document.getElementById('gdpStatus');         // Get the status element for GDP data
+  if (res.status === 'ok') {                                   // If the request was successful
+    setGDP(res);                                               // Update the GDP data display
     status.textContent = '';
     status.classList.remove('err');
   } else if (res.status === 'empty') {
@@ -1203,13 +1203,13 @@ function setEndemic(payload) {
   const totalEl = document.getElementById('totalEndemic');
   const endEl = document.getElementById('endangeredEndemic');
   if (payload.status === 'ok') {
-    const nt = payload.nearThreatened || 0;
-    const vu = payload.vulnerable || 0;
-    const en = payload.endangered || 0;
-    const cr = payload.criticallyEndangered || 0;
-    const threatened = nt + vu + en + cr;
-    totalEl.textContent = fmtInt(payload.totalEndemicSpecies);
-    endEl.textContent = fmtInt(threatened);
+    const nt = payload.nearThreatened || 0;                       //Pick NT species or 0
+    const vu = payload.vulnerable || 0;                           // Pick VU species or 0
+    const en = payload.endangered || 0;                           // Pick EN species or 0
+    const cr = payload.criticallyEndangered || 0;                 // Pick CR species or 0
+    const threatened = nt + vu + en + cr;                         // Calculate total threatened species
+    totalEl.textContent = fmtInt(payload.totalEndemicSpecies);    // Set total endemic species count
+    endEl.textContent = fmtInt(threatened);                       // Set total threatened endemic species count
   } else if (payload.status === 'empty') {
     totalEl.textContent = '—';
     endEl.textContent = '—';
@@ -1227,8 +1227,8 @@ function setGDP(payload) {
   const g = document.getElementById('gdp');
   const gy = document.getElementById('gdpYear');
   if (payload.status === 'ok') {
-    g.textContent = `${fmtMoney(payload.gdpUSD)} USD`;
-    gy.textContent = formatYearLabel(payload.gdpYear);
+    g.textContent = `${fmtMoney(payload.gdpUSD)} USD`;      // Set GDP value with formatting
+    gy.textContent = formatYearLabel(payload.gdpYear);      // Set GDP year label
   } else if (payload.status === 'empty') {
     g.textContent = '—';
     gy.textContent = '';
@@ -1246,8 +1246,8 @@ function setPopulation(payload) {
   const p = document.getElementById('population');
   const py = document.getElementById('popYear');
   if (payload.status === 'ok') {
-    p.textContent = fmtInt(payload.population);
-    py.textContent = formatYearLabel(payload.popYear);
+    p.textContent = fmtInt(payload.population);             // Set population value with formatting
+    py.textContent = formatYearLabel(payload.popYear);      // Set population year label
   } else if (payload.status === 'empty') {
     p.textContent = '—';
     py.textContent = '';
@@ -1270,34 +1270,34 @@ function drawEndemicChart({ total, nt, vu, en, cr }) {
   const threatened = (nt || 0) + (vu || 0) + (en || 0) + (cr || 0);
   const other = Math.max((total || 0) - threatened, 0);
 
-  const data = [
+  const data = [                                                                // Prepare data for the pie chart
     { label: 'Near threatened', value: nt || 0, color: '#58BB43' },
     { label: 'Vulnerable', value: vu || 0, color: '#3AA346' },
     { label: 'Endangered', value: en || 0, color: '#1E8C45' },
     { label: 'Critically endangered', value: cr || 0, color: '#9BE931' },
     { label: 'Other', value: other, color: '#8a5a2e' }
-  ].filter(d => d.value > 0);
+  ].filter(d => d.value > 0);                                                   // Keep only categories with non-zero values
 
-  if (!data.length) return;
+  if (!data.length) return;                                                     // If there's no data to display, exit the function
 
-  const svgC = cont.append('svg')
-    .attr('width', width)
-    .attr('height', height)
-    .append('g')
-    .attr('transform', `translate(${width / 2}, ${height / 2})`);
+  const svgC = cont.append('svg')                                               // Append an SVG (Scalable Vector Graphics) element to the chart container
+    .attr('width', width)                                                       // Set SVG width
+    .attr('height', height)                                                     // Set SVG height
+    .append('g')                                                                // Create a group element for the pie chart
+    .attr('transform', `translate(${width / 2}, ${height / 2})`);               // Center the pie chart within the SVG
 
-  const pie = d3.pie().sort(null).value(d => d.value);
-  const arc = d3.arc().innerRadius(0).outerRadius(radius);
+  const pie = d3.pie().sort(null).value(d => d.value);                          // Create a pie layout generator
+  const arc = d3.arc().innerRadius(0).outerRadius(radius);                      // Create an arc generator for pie slices
 
-  const arcs = pie(data);
+  const arcs = pie(data);                                                       // Generate pie slices based on the data
 
   svgC.selectAll('path')
     .data(arcs)
     .join('path')
     .attr('d', arc)
     .attr('fill', d => d.data.color)
-    .attr('stroke', '#0b1020')
-    .attr('stroke-width', 0.6);
+    .attr('stroke', '#05170aff')                                                // Set stroke color for pie slices
+    .attr('stroke-width', 0.6);                                                   // Set stroke width for pie slices
 
   const legend = cont.append('div').attr('class', 'pie-legend');
   const items = legend.selectAll('.pie-legend-item')
@@ -1307,20 +1307,20 @@ function drawEndemicChart({ total, nt, vu, en, cr }) {
 
   items.append('span')
     .attr('class', 'pie-swatch')
-    .style('background', d => d.color);
+    .style('background', d => d.color);                             // Create color swatch for each legend item
 
   items.append('span')
     .attr('class', 'pie-label')
-    .text(d => `${d.label}: ${fmtInt(d.value)}`);
+    .text(d => `${d.label}: ${fmtInt(d.value)}`);                   // Set legend label with category name and value
 }
 
 // Formats year information for display
 function formatYearLabel(value) {
   if (!value) return '';
-  if (typeof value === 'string' && (value.startsWith('Latest') || value.includes(':'))) {
+  if (typeof value === 'string' && (value.startsWith('Latest') || value.includes(':'))) {    // If the value is a string indicating "Latest" or contains a colon, return it as is
     return value;
   }
-  return `Year: ${value}`;
+  return `Year: ${value}`;                                                                   // Otherwise, format it as "Year: [value]"
 }
 
 // Handles initialization errors
