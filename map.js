@@ -902,68 +902,82 @@ function buildPopulationMap(json) {                                     // Build
   return m;
 }
 
+//LOADING SIGN
+
 function showLoading(on) {                                       // Toggles the loading indicator visibility (hide/show)
   $loading.style.display = on ? 'flex' : 'none';                 // If "on" is true, show it; if false, hide it
   $loading.setAttribute('aria-hidden', on ? 'false' : 'true');   // Update accessibility attribute
 }
 
-function setPanelMode(text) {
-  panelModeEl.textContent = text;
+//PANEL UPDATES
+
+function setPanelMode(text) {           // Sets the panel mode text (either "Continent overview" or "Country profile") (above the pie chart part)
+  panelModeEl.textContent = text;       // Update the text content of the panel mode element
 }
 
-function setTitle(text) {
-  document.getElementById('country-title').textContent = text || 'Select a continent';
+//TITLE UPDATES
+
+function setTitle(text) {                                                                 // Sets the title of the panel (either continent name or country name)
+  document.getElementById('country-title').textContent = text || 'Select a continent';    // Use provided text or a default instruction
 }
 
-function clearPanel() {
+//DATA DISPLAY UPDATES
+
+function clearPanel() {                                       // Reset all displayed values when nothing is selected
   setEndemic({ status: null });
   setGDP({ status: null });
   setPopulation({ status: null });
-  drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-  setStatuses('', '', '');
+  drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 }); // Draw an empty pie chart
+  setStatuses('', '', '');                                    // Clear all three status messages
 }
 
-function setStatuses(endemicMsg, gdpMsg, popMsg) {
+//STATUS UPDATES
+
+function setStatuses(endemicMsg, gdpMsg, popMsg) {         // Sets individual status messages for endemic, GDP, and population data
   const es = document.getElementById('endemicStatus');
   const gs = document.getElementById('gdpStatus');
   const ps = document.getElementById('popStatus');
-  es.textContent = endemicMsg || '';
-  gs.textContent = gdpMsg || '';
-  ps.textContent = popMsg || '';
-  [es, gs, ps].forEach(el => el.classList.remove('err'));
+  es.textContent = endemicMsg || '';                       // Update endemic status message
+  gs.textContent = gdpMsg || '';                           // Update GDP status message
+  ps.textContent = popMsg || '';                           // Update population status message
+  [es, gs, ps].forEach(el => el.classList.remove('err'));  // Remove error styling from all status elements
 }
 
-function setAllStatuses(message) {
+//IF ERROR IN ANY DATA REQUEST
+
+function setAllStatuses(message) {                                                            // Sets the same error message for all three data statuses
   const es = document.getElementById('endemicStatus');
   const gs = document.getElementById('gdpStatus');
   const ps = document.getElementById('popStatus');
-  [es, gs, ps].forEach(el => { el.textContent = message || ''; el.classList.add('err'); });
+  [es, gs, ps].forEach(el => { el.textContent = message || ''; el.classList.add('err'); });   // Add the error styling class to all status elements
 }
 
-function applyEndemicResult(res) {
-  const status = document.getElementById('endemicStatus');
-  if (res.status === 'ok') {
-    setEndemic(res);
-    drawEndemicChart({
-      total: res.totalEndemicSpecies,
-      nt: res.nearThreatened,
-      vu: res.vulnerable,
-      en: res.endangered,
-      cr: res.criticallyEndangered
+//APPLY DATA RESULTS FOR PIE CHART (res.status === 'ok' means data received successfully; 'empty' means no data available; 'error' means request failed)
+
+function applyEndemicResult(res) {                               // Applies the result of the endemic species data request to the panel
+  const status = document.getElementById('endemicStatus');       // Get the status element for endemic data
+  if (res.status === 'ok') {                                     // If the request was successful
+    setEndemic(res);                                             // Update the endemic data display
+    drawEndemicChart({                                           // Draw the pie chart with the received data
+      total: res.totalEndemicSpecies,                            // total endemic species
+      nt: res.nearThreatened,                                    // near-threatened species
+      vu: res.vulnerable,                                        // vulnerable species
+      en: res.endangered,                                        // endangered species
+      cr: res.criticallyEndangered                               // critically endangered species
     });
-    status.textContent = '';
-    status.classList.remove('err');
-  } else if (res.status === 'empty') {
-    setEndemic({ status: 'empty' });
-    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-    status.textContent = 'No data';
-    status.classList.remove('err');
-  } else if (res.status === 'error') {
-    setEndemic({ status: 'error' });
-    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
-    status.textContent = 'Request failed';
-    status.classList.add('err');
-  } else {
+    status.textContent = '';                                     // Clear any status message
+    status.classList.remove('err');                              // Remove error styling
+  } else if (res.status === 'empty') {                           // If there is no data available
+    setEndemic({ status: 'empty' });                             // Update the endemic data display to show no data
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });  // Draw an empty pie chart
+    status.textContent = 'No data';                              // Set status message to indicate no data
+    status.classList.remove('err');                              // Remove error styling
+  } else if (res.status === 'error') {                           // If there was an error during the request
+    setEndemic({ status: 'error' });                             // Update the endemic data display to show an error
+    drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });  // Draw an empty pie chart
+    status.textContent = 'Request failed';                       // Set status message to indicate request failure
+    status.classList.add('err');                                 // Add error styling
+  } else {                                                       // For any other unexpected status
     setEndemic({ status: null });
     drawEndemicChart({ total: 0, nt: 0, vu: 0, en: 0, cr: 0 });
     status.textContent = '';
@@ -971,10 +985,12 @@ function applyEndemicResult(res) {
   }
 }
 
+//APPLY DATA RESULTS FOR GDP AND POPULATION (res.status === 'ok' means data received successfully; 'empty' means no data available; 'error' means request failed)
+
 function applyGdpResult(res) {
-  const status = document.getElementById('gdpStatus');
-  if (res.status === 'ok') {
-    setGDP(res);
+  const status = document.getElementById('gdpStatus');         // Get the status element for GDP data
+  if (res.status === 'ok') {                                   // If the request was successful
+    setGDP(res);                                               // Update the GDP data display
     status.textContent = '';
     status.classList.remove('err');
   } else if (res.status === 'empty') {
@@ -992,8 +1008,8 @@ function applyGdpResult(res) {
   }
 }
 
-function applyPopResult(res) {
-  const status = document.getElementById('popStatus');
+function applyPopResult(res) {                                // Apply population data results to the panel
+  const status = document.getElementById('popStatus');        // Get the status element for population data
   if (res.status === 'ok') {
     setPopulation(res);
     status.textContent = '';
@@ -1013,17 +1029,17 @@ function applyPopResult(res) {
   }
 }
 
-function setEndemic(payload) {
-  const totalEl = document.getElementById('totalEndemic');
-  const endEl = document.getElementById('endangeredEndemic');
+function setEndemic(payload) {                                    // Update the endemic species data display in the panel
+  const totalEl = document.getElementById('totalEndemic');        // Get the element for total endemic species
+  const endEl = document.getElementById('endangeredEndemic');     // Get the element for endangered endemic species
   if (payload.status === 'ok') {
-    const nt = payload.nearThreatened || 0;
-    const vu = payload.vulnerable || 0;
-    const en = payload.endangered || 0;
-    const cr = payload.criticallyEndangered || 0;
-    const threatened = nt + vu + en + cr;
-    totalEl.textContent = fmtInt(payload.totalEndemicSpecies);
-    endEl.textContent = fmtInt(threatened);
+    const nt = payload.nearThreatened || 0;                       //Pick NT species or 0
+    const vu = payload.vulnerable || 0;                           // Pick VU species or 0
+    const en = payload.endangered || 0;                           // Pick EN species or 0
+    const cr = payload.criticallyEndangered || 0;                 // Pick CR species or 0
+    const threatened = nt + vu + en + cr;                         // Calculate total threatened species
+    totalEl.textContent = fmtInt(payload.totalEndemicSpecies);    // Set total endemic species count
+    endEl.textContent = fmtInt(threatened);                       // Set total threatened endemic species count
   } else if (payload.status === 'empty') {
     totalEl.textContent = '—';
     endEl.textContent = '—';
@@ -1036,12 +1052,12 @@ function setEndemic(payload) {
   }
 }
 
-function setGDP(payload) {
-  const g = document.getElementById('gdp');
-  const gy = document.getElementById('gdpYear');
+function setGDP(payload) {                                  // Update the GDP data display in the panel
+  const g = document.getElementById('gdp');                 // Get the element for GDP value
+  const gy = document.getElementById('gdpYear');            // Get the element for GDP year
   if (payload.status === 'ok') {
-    g.textContent = `${fmtMoney(payload.gdpUSD)} USD`;
-    gy.textContent = formatYearLabel(payload.gdpYear);
+    g.textContent = `${fmtMoney(payload.gdpUSD)} USD`;      // Set GDP value with formatting
+    gy.textContent = formatYearLabel(payload.gdpYear);      // Set GDP year label
   } else if (payload.status === 'empty') {
     g.textContent = '—';
     gy.textContent = '';
@@ -1054,12 +1070,12 @@ function setGDP(payload) {
   }
 }
 
-function setPopulation(payload) {
-  const p = document.getElementById('population');
-  const py = document.getElementById('popYear');
+function setPopulation(payload) {                           // Update the population data display in the panel
+  const p = document.getElementById('population');          // Get the element for population value
+  const py = document.getElementById('popYear');            // Get the element for population year
   if (payload.status === 'ok') {
-    p.textContent = fmtInt(payload.population);
-    py.textContent = formatYearLabel(payload.popYear);
+    p.textContent = fmtInt(payload.population);             // Set population value with formatting
+    py.textContent = formatYearLabel(payload.popYear);      // Set population year label
   } else if (payload.status === 'empty') {
     p.textContent = '—';
     py.textContent = '';
@@ -1072,84 +1088,84 @@ function setPopulation(payload) {
   }
 }
 
-function drawEndemicChart({ total, nt, vu, en, cr }) {
-  const cont = d3.select('#chart');
-  cont.selectAll('*').remove();
-  const width = 280;
-  const height = 200;
-  const radius = Math.min(width, height) / 2 - 6;
-  const threatened = (nt || 0) + (vu || 0) + (en || 0) + (cr || 0);
-  const other = Math.max((total || 0) - threatened, 0);
+function drawEndemicChart({ total, nt, vu, en, cr }) {                          // Draws a pie chart representing the distribution of endemic species by threat category
+  const cont = d3.select('#chart');                                             // Select the chart container
+  cont.selectAll('*').remove();                                                 // Clear any existing chart content
+  const width = 280;                                                            // Set chart width
+  const height = 200;                                                           // Set chart height
+  const radius = Math.min(width, height) / 2 - 6;                               // Calculate chart radius
+  const threatened = (nt || 0) + (vu || 0) + (en || 0) + (cr || 0);             // Calculate total threatened species
+  const other = Math.max((total || 0) - threatened, 0);                         // Calculate "Other" category
 
-  const data = [
+  const data = [                                                                // Prepare data for the pie chart
     { label: 'Near threatened', value: nt || 0, color: '#58BB43' },
     { label: 'Vulnerable', value: vu || 0, color: '#3AA346' },
     { label: 'Endangered', value: en || 0, color: '#1E8C45' },
     { label: 'Critically endangered', value: cr || 0, color: '#9BE931' },
     { label: 'Other', value: other, color: '#8a5a2e' }
-  ].filter(d => d.value > 0);
+  ].filter(d => d.value > 0);                                                   // Keep only categories with non-zero values
 
-  if (!data.length) return;
+  if (!data.length) return;                                                     // If there's no data to display, exit the function
 
-  const svgC = cont.append('svg')
-    .attr('width', width)
-    .attr('height', height)
-    .append('g')
-    .attr('transform', `translate(${width / 2}, ${height / 2})`);
+  const svgC = cont.append('svg')                                               // Append an SVG (Scalable Vector Graphics) element to the chart container
+    .attr('width', width)                                                       // Set SVG width
+    .attr('height', height)                                                     // Set SVG height
+    .append('g')                                                                // Create a group element for the pie chart
+    .attr('transform', `translate(${width / 2}, ${height / 2})`);               // Center the pie chart within the SVG
 
-  const pie = d3.pie().sort(null).value(d => d.value);
-  const arc = d3.arc().innerRadius(0).outerRadius(radius);
+  const pie = d3.pie().sort(null).value(d => d.value);                          // Create a pie layout generator
+  const arc = d3.arc().innerRadius(0).outerRadius(radius);                      // Create an arc generator for pie slices
 
-  const arcs = pie(data);
+  const arcs = pie(data);                                                       // Generate pie slices based on the data
 
   svgC.selectAll('path')
     .data(arcs)
     .join('path')
     .attr('d', arc)
     .attr('fill', d => d.data.color)
-    .attr('stroke', '#0b1020')
-    .attr('stroke-width', 0.6);
+    .attr('stroke', '#05170aff')                                                // Set stroke color for pie slices
+    .attr('stroke-width', 0.6);                                                   // Set stroke width for pie slices
 
   // Legend next to the chart
-  const legend = cont.append('div').attr('class', 'pie-legend');
-  const items = legend.selectAll('.pie-legend-item')
+  const legend = cont.append('div').attr('class', 'pie-legend');    // Create a div for the legend
+  const items = legend.selectAll('.pie-legend-item')                // Select all legend items
     .data(data)
     .join('div')
     .attr('class', 'pie-legend-item');
 
   items.append('span')
     .attr('class', 'pie-swatch')
-    .style('background', d => d.color);
+    .style('background', d => d.color);                             // Create color swatch for each legend item
 
   items.append('span')
     .attr('class', 'pie-label')
-    .text(d => `${d.label}: ${fmtInt(d.value)}`);
+    .text(d => `${d.label}: ${fmtInt(d.value)}`);                   // Set legend label with category name and value
 }
 
-function formatYearLabel(value) {
+function formatYearLabel(value) {                                                            // Formats the year label for GDP and population data
   if (!value) return '';
-  if (typeof value === 'string' && (value.startsWith('Latest') || value.includes(':'))) {
+  if (typeof value === 'string' && (value.startsWith('Latest') || value.includes(':'))) {    // If the value is a string indicating "Latest" or contains a colon, return it as is
     return value;
   }
-  return `Year: ${value}`;
+  return `Year: ${value}`;                                                                   // Otherwise, format it as "Year: [value]"
 }
 
-function handleInitError(err) {
+function handleInitError(err) {                                                              // Handles initialization errors by logging the error and updating the data context element with an error message
   console.error(err);
   dataContextEl.textContent = 'Unable to draw the basemap right now. Please retry.';
 }
 
-async function boot() {
-  setupButtons();
-  try {
-    await loadGeoData();
-    initMapLayers();
-    renderMap();
-    window.addEventListener('resize', onResize, { passive: true });
-    clearPanel();
+async function boot() {                                                     // Main initialization function to set up the map and load data
+  setupButtons();                                                           // Set up UI buttons
+  try {                                                                     // Try to ensure all data is ready
+    await loadGeoData();                                                    // Load geographical data for the map
+    initMapLayers();                                                        // Initialize map layers
+    renderMap();                                                            // Render the map
+    window.addEventListener('resize', onResize, { passive: true });         // Add event listener for window resize
+    clearPanel();                                                           // Clear any existing panel content
   } catch (err) {
     handleInitError(err);
   }
 }
 
-boot();
+boot();                                                                     // Start the initialization process
