@@ -318,3 +318,56 @@ body.contact-page {
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* ============================================ */
+/* CORRELATIONS PAGE: FULL SCREEN WITH BACKGROUND */
+/* ============================================ */
+
+body.correlation-page {
+  background-image: url("https://www.climate-kic.org/wp-content/uploads/2024/03/INFORMA-Opinion-piece-image.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Make main container fill viewport */
+.viz-main {
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero section with glass effect */
+.viz-hero {
+  background: rgba(1, 79, 49, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(31, 138, 69, 0.4);
+  padding: 40px 24px;
+  margin: 0;
+}
+
+/* Cards with glass effect */
+.viz-card {
+  background: rgba(1, 79, 49, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(31, 138, 69, 0.3);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+/* Chart container */
+.chart-wrap {
+  background: rgba(0, 40, 20, 0.6);
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid rgba(31, 138, 69, 0.2);
+}
+
+/* Chart SVG background */
+.chart-wrap svg {
+  background: transparent !important;
+}
