@@ -164,13 +164,13 @@ function renderScatter(cfg, data) {
     .attr('transform', `translate(0,${height - margin.bottom})`) // Position at the bottom of the chart
     .call(d3.axisBottom(x))                                      // Draw the X-axis using the X scale
     .call(g => g.selectAll('text').attr('fill', '#a8b3c7').style('font-size', '11px')) // Style axis labels
-    .call(g => g.selectAll('line,path').attr('stroke', '#27335c')); // Style axis line and ticks
+    .call(g => g.selectAll('line,path').attr('stroke', '#2a5c27ff')); // Style axis line and ticks
 
   group.append('g')                                              // Add the Y-axis group
     .attr('transform', `translate(${margin.left},0)`)            // Position at left margin
     .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format('.0%')))  // Draw Y-axis with percentage tick labels
     .call(g => g.selectAll('text').attr('fill', '#a8b3c7').style('font-size', '11px')) // Style axis text
-    .call(g => g.selectAll('line,path').attr('stroke', '#27335c')); // Style axis lines
+    .call(g => g.selectAll('line,path').attr('stroke', '#2a5c27ff')); // Style axis lines
 
   group.append('text')                                           // Add X-axis label text
     .attr('x', width / 2)
@@ -195,7 +195,7 @@ function renderScatter(cfg, data) {
     .attr('cx', d => x(d.x))                                     // Horizontal position from X value
     .attr('cy', d => y(d.y))                                     // Vertical position from Y value
     .attr('r', 5)                                                // Circle radius
-    .attr('fill', '#74c0ff')                                     // Circle color
+    .attr('fill', '#99ff74ff')                                     // Circle color
     .attr('opacity', 0.9)                                        // Slight transparency
     .on('mouseenter', (event, d) => showTooltip(event, d, cfg, svg.node())) // Show tooltip when mouse enters
     .on('mousemove', (event, d) => showTooltip(event, d, cfg, svg.node()))  // Update tooltip position on move
@@ -229,7 +229,7 @@ function showTooltip(event, datum, cfg, svgNode) {
   tooltip.style.left = `${Math.min(left, maxLeft)}px`;           // Set tooltip X position within bounds
   tooltip.style.top = `${Math.min(top, maxTop)}px`;              // Set tooltip Y position within bounds
 
-  tooltip.innerHTML = `                                          // Fill tooltip HTML with country info
+  tooltip.innerHTML = `                                          
     <strong>${datum.countryLabel}</strong><br>
     Threatened fraction: ${(datum.y * 100).toFixed(1)}%<br>
     ${cfg.tooltipLabel || cfg.xLabel}: ${cfg.tooltipFmt(datum)}<br>
@@ -254,7 +254,7 @@ function writeStats(targetId, regression, n) {
   const r = regression.r?.toFixed(3) || '0';                     // Format correlation coefficient r
   const r2 = regression.r2?.toFixed(3) || '0';                   // Format R² value
 
-  el.innerHTML = `                                               // Insert a small block of HTML describing regression
+  el.innerHTML = `                                               
     <p><strong>Linear regression</strong> (y = a·x + b)</p>
     <p>n = ${n}</p>
     <p>a (slope) ≈ ${slope}</p>
