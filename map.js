@@ -197,17 +197,6 @@ function getCountryBiome(country) {
                           'Bulgaria', 'Serbia', 'Hungary', 'Czech Republic', 'Slovakia', 'Austria',
                           'Switzerland', 'Chile', 'New Zealand'];
   if (forestCountries.includes(countryName)) return 'forest';
-  
-  // Fallback: assign biome based on continent
-  if (continent === 'Europe') return 'forest';
-  if (continent === 'North America') return 'forest';
-  if (continent === 'Asia') return 'forest';
-  if (continent === 'Africa') return 'grassland';
-  if (continent === 'South America') return 'rainforest';
-  if (continent === 'Oceania') return 'desert';
-  if (continent === 'Antarctica') return 'ice';
-  
-  return 'forest'; // Default biome
 }
 
 // Groups countries into continents and creates continent features

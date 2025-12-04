@@ -18,7 +18,16 @@
   </header>
 
   <main>
-    
+   
+
+    <section class="explorer" id="explorer" style="flex: 1; display: flex; flex-direction: column;">
+      <div class="section-heading">
+        <div>
+          
+        </div>
+        <button class="btn btn-outline" id="backToWorld" disabled>Back to continents</button>
+      </div>
+
       <div class="app" style="flex: 1; min-height: 70vh;">
         <div class="map-wrap" style="height: 100%; min-height: 500px;">
           <svg class="map" style="height: 100%; width: 100%;"></svg>
@@ -95,8 +104,8 @@
             <div class="status" id="popStatus"></div>
           </div>
 
-          <div class="note">Data source: QLever Wikidata (live).</div>
-          <div class="attribution">Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a></div>
+          <div class="note">Data source: QLever Wikidata (live). Tables are fetched once and filtered client-side.</div>
+          <div class="attribution">Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a>.</div>
         </aside>
       </div>
     </section>
