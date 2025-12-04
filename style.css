@@ -82,7 +82,7 @@ main { display:flex; flex-direction:column; gap:40px; }
 .content-card ul { margin:8px 0 12px 20px; color:var(--muted); }
 
 .explorer { padding:0 0 32px; }
-.section-heading { display:flex; justify-content:space-between; align-items:flex-start; padding:0 24px 16px; gap:16px; flex-wrap:wrap; }
+.section-heading { display:flex; justify-content:space-between; align-items:flex-start; padding: 15px 24px 16px; gap:16px; flex-wrap:wrap; }
 .section-heading h3 { margin:0; font-size:20px; }
 .section-heading p { margin:6px 0 0; color:var(--muted); font-size:14px; max-width:560px; }
 
