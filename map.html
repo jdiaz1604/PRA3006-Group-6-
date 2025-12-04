@@ -18,29 +18,7 @@
   </header>
 
   <main>
-    <section class="hero" id="intro">
-      <div>
-        <h2>Continent to country: biodiversity vs. macroeconomics.</h2>
-        <p>
-          Click a continent to view aggregated endemic species, endangered endemic species, nominal GDP, and population.
-          Once you have a regional overview, zoom into any country within that continent to inspect its latest metrics.
-        </p>
-        <div class="hero-actions">
-          <button class="btn btn-primary" id="startExploring">Jump to the map</button>
-          <a class="btn btn-outline" href="https://qlever.cs.uni-freiburg.de/wikidata" target="_blank" rel="noopener">About the data</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="explorer" id="explorer" style="flex: 1; display: flex; flex-direction: column;">
-      <div class="section-heading">
-        <div>
-          <h3>Continent → country drill-down</h3>
-          <p>Click a continent to see aggregated indicators, then select countries within that continent for a focused profile.</p>
-        </div>
-        <button class="btn btn-outline" id="backToWorld" disabled>Back to continents</button>
-      </div>
-
+    
       <div class="app" style="flex: 1; min-height: 70vh;">
         <div class="map-wrap" style="height: 100%; min-height: 500px;">
           <svg class="map" style="height: 100%; width: 100%;"></svg>
@@ -89,12 +67,6 @@
           <div class="panel-label" id="panelMode">Continent overview</div>
           <h2 id="country-title">Select a continent</h2>
           <p class="small" id="dataContext">Start at the continent level to unlock regional totals. Then click any highlighted country to drill into its latest data.</p>
-          <ul class="checklist">
-            <li>Total endemic species</li>
-            <li>Threatened endemic species (NT/VU/EN/CR)</li>
-            <li>Latest nominal GDP (USD)</li>
-            <li>Latest population</li>
-          </ul>
 
           <div class="metric">
             <div class="metric-label">Total endemic species</div>
@@ -123,8 +95,8 @@
             <div class="status" id="popStatus"></div>
           </div>
 
-          <div class="note">Data source: QLever Wikidata (live). Tables are fetched once and filtered client-side.</div>
-          <div class="attribution">Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a>.</div>
+          <div class="note">Data source: QLever Wikidata (live).</div>
+          <div class="attribution">Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a></div>
         </aside>
       </div>
     </section>

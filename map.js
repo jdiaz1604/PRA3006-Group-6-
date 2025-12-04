@@ -841,42 +841,42 @@ function delayWithJitter(base, attempt) {
 // SPARQL QUERIES
 // ============================================
 
-// Query for endemic species + IUCN categories
-const Q_END_EMD = `                                   
-PREFIX wd:   <http://www.wikidata.org/entity/>         
-PREFIX wdt:  <http://www.wikidata.org/prop/direct/>    
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>   
+//Query for endemic species + IUCN categories
+const Q_END_EMD = `                                    #This creates a JavaScript string that contains a SPARQL query; the query fetches all species data
+PREFIX wd:   <http://www.wikidata.org/entity/>         #This tells SPARQL where Wikidata items should be derived from
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>    #This tells SPARQL where direct Wikidata properties shoud be derived from
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>   #This gives access to standard RDF features, including labels
 
-SELECT               
-  ?country           
-  ?countryLabel      
-  ?iso3              
-  ?isoNum            
-  (COALESCE(?allSpecies, 0)  AS ?totalEndemicSpecies)                       
-  (COALESCE(?ntSpecies, 0)   AS ?nearThreatenedEndemicSpecies)              
-  (COALESCE(?vuSpecies, 0)   AS ?vulnerableEndemicSpecies)                  
-  (COALESCE(?enSpecies, 0)   AS ?endangeredEndemicSpecies)                  
-  (COALESCE(?crSpecies, 0)   AS ?criticallyEndangeredEndemicSpecies)        
+SELECT               #Everything below defines what pieces of data we want back from Wikidata
+  ?country           #We want the Wikidata ID of each country
+  ?countryLabel      # country name (in English)
+  ?iso3              # code for the country (3-letter ISO code)
+  ?isoNum            # numeric code 
+  (COALESCE(?allSpecies, 0)  AS ?totalEndemicSpecies)                       # If total endemic species exist, take them; otherwise use 0
+  (COALESCE(?ntSpecies, 0)   AS ?nearThreatenedEndemicSpecies)              #same as above for NT species
+  (COALESCE(?vuSpecies, 0)   AS ?vulnerableEndemicSpecies)                  # same as above for VU species
+  (COALESCE(?enSpecies, 0)   AS ?endangeredEndemicSpecies)                  # same as above for EN species
+  (COALESCE(?crSpecies, 0)   AS ?criticallyEndangeredEndemicSpecies)        # same as above for CR species
 
-WHERE {                                                                                         
-  ?country wdt:P31 wd:Q6256 .                                                                   
-  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }           
-  OPTIONAL { ?country wdt:P298 ?iso3 }                                                          
-  OPTIONAL { ?country wdt:P299 ?isoNum }                                                        
+WHERE {                                                                                         # Begin the data retrieval block (the main query begins here)
+  ?country wdt:P31 wd:Q6256 .                                                                   # Select only entities that are instances of "country" (Q6256)
+  OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }           # Get the English label for each country
+  OPTIONAL { ?country wdt:P298 ?iso3 }                                                          # Get the 3-letter ISO code for each country
+  OPTIONAL { ?country wdt:P299 ?isoNum }                                                        # Get the numeric ISO code for each country
 
-  OPTIONAL {                                                     
-SELECT ?country (COUNT(DISTINCT ?sp) AS ?allSpecies)             
-WHERE {                                                          
-  ?sp wdt:P31 wd:Q16521 ;         
-      wdt:P105 wd:Q7432 ;         
-      wdt:P183 ?country .         
-  ?country wdt:P31 wd:Q6256 .     
+  OPTIONAL {                                                     # Begin optional block to count all endemic species 
+SELECT ?country (COUNT(DISTINCT ?sp) AS ?allSpecies)             #For each country, count distinct species that are endemic
+WHERE {                                                          # Begin data retrieval for endemic species
+  ?sp wdt:P31 wd:Q16521 ;         # Select organisms that are taxa
+      wdt:P105 wd:Q7432 ;         # Make sure they are at species rank
+      wdt:P183 ?country .         # Keep only species marked as “endemic to this country.”
+  ?country wdt:P31 wd:Q6256 .     # Confirm again that this is a country
 }
-GROUP BY ?country                 
+GROUP BY ?country                 # Group results by country to get counts (ensures the count happens per country)
   }
 
-  OPTIONAL {                                             
-SELECT ?country (COUNT(DISTINCT ?spNT) AS ?ntSpecies)    
+  OPTIONAL {                                             #Begin optional block to count Near Threatened species
+SELECT ?country (COUNT(DISTINCT ?spNT) AS ?ntSpecies)    #For each country, count distinct species that are Near Threatened
 WHERE {
   ?spNT wdt:P31  wd:Q16521 ;
         wdt:P105 wd:Q7432 ;
@@ -887,7 +887,7 @@ WHERE {
 GROUP BY ?country
   }
 
-  OPTIONAL {                                             
+  OPTIONAL {                                             #Blocks to count VU, EN, CR species follow same pattern
 SELECT ?country (COUNT(DISTINCT ?spVU) AS ?vuSpecies)
 WHERE {
   ?spVU wdt:P31  wd:Q16521 ;
@@ -926,23 +926,22 @@ GROUP BY ?country
 ORDER BY DESC(?totalEndemicSpecies) 
 `;
 
-// Query for GDP data
-const Q_GDP = `                                         
-PREFIX wd:   <http://www.wikidata.org/entity/>          
-PREFIX wdt:  <http://www.wikidata.org/prop/direct/>     
-PREFIX p:    <http://www.wikidata.org/prop/>            
-PREFIX ps:   <http://www.wikidata.org/prop/statement/>  
-PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>  
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>    
+const Q_GDP = `                                         # SPARQL query to get latest GDP data for countries
+PREFIX wd:   <http://www.wikidata.org/entity/>          # This tells SPARQL where Wikidata items should be derived from
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>     # This tells SPARQL where direct Wikidata properties shoud be derived from
+PREFIX p:    <http://www.wikidata.org/prop/>            # This gives access to Wikidata properties in statement form
+PREFIX ps:   <http://www.wikidata.org/prop/statement/>  # This gives access to the main values of Wikidata statements
+PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>  # This gives access to qualifiers on Wikidata statements
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>    # This gives access to standard RDF features, including labels
 
 SELECT
   ?country
   ?countryLabel
   ?iso3
   ?isoNum
-  ?gdpUSD                                                                                 
-  ?gdpYear                                                                                
-WHERE {                                                                                   
+  ?gdpUSD                                                                                 # GDP in US dollars (latest available)
+  ?gdpYear                                                                                # Year of the GDP data
+WHERE {                                                                                   # Begin data retrieval block
   ?country wdt:P31 wd:Q6256 .                                                             
   OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }     
   OPTIONAL { ?country wdt:P298 ?iso3 }                                                    
@@ -966,22 +965,21 @@ GROUP BY ?country
 ORDER BY DESC(?gdpUSD)
 `;
 
-// Query for population data
-const Q_POP = `                                                
-PREFIX wd:   <http://www.wikidata.org/entity/>                 
-PREFIX wdt:  <http://www.wikidata.org/prop/direct/>            
-PREFIX p:    <http://www.wikidata.org/prop/>                   
-PREFIX ps:   <http://www.wikidata.org/prop/statement/>         
-PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>         
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>           
+const Q_POP = `                                                # SPARQL query to get latest population data for countries
+PREFIX wd:   <http://www.wikidata.org/entity/>                 # This tells SPARQL where Wikidata items should be derived from
+PREFIX wdt:  <http://www.wikidata.org/prop/direct/>            # This tells SPARQL where direct Wikidata properties shoud be derived from
+PREFIX p:    <http://www.wikidata.org/prop/>                   # This gives access to Wikidata properties in statement form
+PREFIX ps:   <http://www.wikidata.org/prop/statement/>         # This gives access to the main values of Wikidata statements
+PREFIX pq:   <http://www.wikidata.org/prop/qualifier/>         # This gives access to qualifiers on Wikidata statements
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>           # This gives access to standard RDF features, including labels
 
 SELECT
   ?country
   ?countryLabel
   ?iso3
   ?isoNum
-  ?population          
-  ?popYear             
+  ?population          # Population (latest available)
+  ?popYear             # Year of the population data
 WHERE {
   ?country wdt:P31 wd:Q6256 .
   OPTIONAL { ?country rdfs:label ?countryLabel . FILTER(LANG(?countryLabel) = "en") }
