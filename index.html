@@ -1,49 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Endemic Species & Economy Explorer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body class="home">
-  <header>
-    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1>
-    <nav>
-      <a href="index.html" class="active">Home</a>
-      <a href="map.html">Interactive map</a>
-      <a href="correlations.html">Correlations</a>
-      <a href="contact.html">Contact</a>
-    </nav>
-  </header>
+<!DOCTYPE html>                     <!-- HTML5 document type declaration -->
+<html lang="en">                    <!-- Root element, English language -->
+<head>                              <!-- Metadata container -->
+  <meta charset="utf-8" />          <!-- UTF-8 character encoding -->
+  <title>Endemic Species & Economy Explorer</title> <!-- Browser tab title -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" /> <!-- Mobile responsive -->
+  <link rel="stylesheet" href="style.css" /> <!-- External CSS stylesheet -->
+</head>                             <!-- End metadata -->
+<body class="home">                 <!-- Visible content, homepage class -->
+  <header>                          <!-- Page header section -->
+    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1> <!-- Main heading -->
+    <nav>                           <!-- Navigation menu -->
+      <a href="index.html" class="active">Home</a> <!-- Current page link -->
+      <a href="map.html">Interactive map</a> <!-- Map page link -->
+      <a href="correlations.html">Correlations</a> <!-- Correlations page link -->
+      <a href="contact.html">Contact</a> <!-- Contact page link -->
+    </nav>                          <!-- End navigation -->
+  </header>                         <!-- End header -->
 
-  <main class="home-main">
-    <section class="content-card">
-      <h3>About the project</h3>
-      <p>
-        We set out to test whether a country’s socioeconomic profile (GDP and population size) correlates with the proportion of threatened endemic species. Our hypothesis: higher GDP and smaller population would mean a lower threatened/endemic proportion. After running linear regressions on Wikidata-sourced data, we did not find a significant correlation.
-      </p>
+  <main class="home-main">          <!-- Main content area -->
+    <section class="content-card">  <!-- Content section styled as card -->
+      <h3>About the project</h3>    <!-- Section heading level 3 -->
+      <p>                           <!-- Project description paragraph -->
+        We set out to test whether a country's socioeconomic profile (GDP and population size) correlates with the proportion of threatened endemic species. Our hypothesis: higher GDP and smaller population would mean a lower threatened/endemic proportion. After running linear regressions on Wikidata-sourced data, we did not find a significant correlation.
+      </p>                          <!-- End paragraph -->
 
-      <h4>List of terms</h4>
-      <p><strong>Endemic species:</strong> a native species found only in a single geographic location (e.g., Australian Koala, Chinese Giant Panda).</p>
-      <p><strong>GDP (Gross Domestic Product):</strong> total market value of all final goods and services produced within a country; used here as a proxy for economic health.</p>
-      <p><strong>Correlation graph:</strong> a visual tool to show the relationship between two variables (positive, negative, or none).</p>
+      <h4>List of terms</h4>        <!-- Subheading level 4 -->
+      <p><strong>Endemic species:</strong> a native species found only in a single geographic location (e.g., Australian Koala, Chinese Giant Panda).</p> <!-- Term definition 1 -->
+      <p><strong>GDP (Gross Domestic Product):</strong> total market value of all final goods and services produced within a country; used here as a proxy for economic health.</p> <!-- Term definition 2 -->
+      <p><strong>Correlation graph:</strong> a visual tool to show the relationship between two variables (positive, negative, or none).</p> <!-- Term definition 3 -->
 
-      <h4>What we did</h4>
-      <ul>
-        <li>Created SPARQL queries for <a href="https://qlever.dev/wikidata/nKNf67" target="_blank" rel="noopener">species</a>, <a href="https://qlever.dev/wikidata/PHa2jp" target="_blank" rel="noopener">GDP</a>, and <a href="https://qlever.dev/wikidata/BOquqF" target="_blank" rel="noopener">population</a>.</li>
-        <li>Built an interactive map showing endemic counts and threatened categories (NT, VU, EN, CR) per country.</li>
-        <li>Ran regressions and plotted correlations for threatened fraction vs GDP and population.</li>
-        <li>Sharpened skills in GitHub, SPARQL, HTML, JavaScript, and CSS.</li>
-      </ul>
+      <h4>What we did</h4>          <!-- Subheading -->
+      <ul>                          <!-- Unordered list of activities -->
+        <li>Created SPARQL queries for <a href="https://qlever.dev/wikidata/nKNf67" target="_blank" rel="noopener">species</a>, <a href="https://qlever.dev/wikidata/PHa2jp" target="_blank" rel="noopener">GDP</a>, and <a href="https://qlever.dev/wikidata/BOquqF" target="_blank" rel="noopener">population</a>.</li> <!-- List item 1 -->
+        <li>Built an interactive map showing endemic counts and threatened categories (NT, VU, EN, CR) per country.</li> <!-- List item 2 -->
+        <li>Ran regressions and plotted correlations for threatened fraction vs GDP and population.</li> <!-- List item 3 -->
+        <li>Sharpened skills in GitHub, SPARQL, HTML, JavaScript, and CSS.</li> <!-- List item 4 -->
+      </ul>                         <!-- End list -->
 
-      <h4>Limitations</h4>
-      <ul>
-        <li>Correlations are more complex than GDP and population alone.</li>
-        <li>Migrating species are underrepresented; endemic focus favors islands.</li>
-        <li>Only terrestrial species considered; marine species are excluded.</li>
-      </ul>
-    </section>
-  </main>
-</body>
-</html>
+      <h4>Limitations</h4>          <!-- Subheading -->
+      <ul>                          <!-- Unordered list of limitations -->
+        <li>Correlations are more complex than GDP and population alone.</li> <!-- Limitation 1 -->
+        <li>Migrating species are underrepresented; endemic focus favors islands.</li> <!-- Limitation 2 -->
+        <li>Only terrestrial species considered; marine species are excluded.</li> <!-- Limitation 3 -->
+      </ul>                         <!-- End list -->
+    </section>                      <!-- End content card -->
+  </main>                           <!-- End main content -->
+</body>                             <!-- End visible content -->
+</html>                             <!-- End HTML document -->
