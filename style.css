@@ -145,8 +145,8 @@ main { display:flex; flex-direction:column; gap:40px; }
 }
 
 /* Default colors as fallback */
-.continent { fill: #4a7b3d; }
-.country { fill: #4a7b3d; }
+.continent { fill: #4a7b3d; } /* Default continent color */
+.country { fill: #4a7b3d; } /* Default country color */
 
 /* ============ CONTINENT COLORS (Change these to modify continent appearance) ============ */
 .continent[data-continent="north-america"] { fill: #3e6b35; }  /* Change color here */
@@ -179,143 +179,212 @@ main { display:flex; flex-direction:column; gap:40px; }
 }
 
 /* Countries are visible but not interactive until continent is selected */
-.countries-layer { 
-  opacity:0.7; 
-  pointer-events:none; 
-  transition:opacity .2s; 
+.countries-layer { /* Base styles for countries layer */
+  opacity:1; /* opaque colors for countries from the start */
+  pointer-events:none; /* No mouse interactions */
+  transition:opacity .2s; /* Smooth opacity change */
 }
-.countries-layer.active { 
-  opacity:1; 
-  pointer-events:auto; 
-}
-
-.continent-dim { 
-  opacity:0.6; 
-  pointer-events:none; 
-}
-.country-muted { 
-  opacity:0.3; 
-  pointer-events:none; 
+.countries-layer.active { /* When continent is selected */
+  opacity:1; /* Fully visible */
+  pointer-events:auto; /* Enable interactions with countries */
 }
 
-#dataContext { font-size:13px; color:var(--muted); margin-top:4px; min-height:18px; }
+.continent-dim { /* Dimmed continent when one continent is selected */
+  opacity:0.6; /* Dimmed appearance */
+  pointer-events:none; /* No interactions */
+}
+.country-muted { /* Muted/dimmed countries when continent is selected */
+  opacity:0.3; /* Very transparent */
+  pointer-events:none; /* No interactions */
+}
 
-/* Enhanced continent borders on hover */
+#dataContext { font-size:13px; color:var(--muted); margin-top:4px; min-height:18px; } /* Side menu intro sentence : 'The panel will show:' */
+/* ============================================ */
+/*continet hover and selection styles*/
+/* ============================================ */
+/* Continent borders on hover */
 .continent:hover {
-  stroke: #ffffff !important;
-  stroke-width: 2.5 !important;
-  filter: brightness(1.15) drop-shadow(0 0 8px rgba(111, 177, 255, 0.3));
+  stroke: #ffffff !important; /* White border on hover */
+  stroke-width: 2.5 !important; /* Thicker border */
+  filter: brightness(1.15) drop-shadow(0 0 8px rgba(111, 177, 255, 0.3)); /* Glow effect */
 }
 
-/* Active continent selection with glowing border */
+/* Continent selection with glowing border */
 .continent-selected {
-  stroke: #ffffff !important;
-  stroke-width: 3 !important;
-  filter: brightness(1.1) drop-shadow(0 0 12px rgba(143, 224, 242, 0.4));
+  stroke: #ffffff !important; /* White border */
+  stroke-width: 3 !important; /* Thick border */
+  filter: brightness(1.1) drop-shadow(0 0 12px rgba(143, 224, 242, 0.4)); /* Glowing effect */
 }
 
 /* Make continent borders more visible when interacting */
 .continents-layer path {
-  stroke: rgba(255, 255, 255, 0.3);
-  stroke-width: 1.2;
-  transition: all 0.3s ease;
+  stroke: rgba(255, 255, 255, 0.3); /* Semi-transparent white */
+  stroke-width: 1.9;
+  transition: all 0.3s ease; /* Smooth transitions */
 }
 
 /* Enhanced tooltip for continents */
 .continent:hover + .tooltip,
 .continent-selected + .tooltip {
-  background: var(--accent);
-  color: var(--bg);
-  font-weight: 600;
-  border-color: var(--accent-strong);
+  background: var(--accent); /* Accent color background */
+  color: var(--bg); /* Background color for text */
+  font-weight: 600; /* Bold text */
+  border-color: var(--accent-strong); /* Strong accent border */
 }
+/* ============================================ */
+
+/* ============================================ */
+/* BIOME LEGEND STYLES                        */
+/* ============================================ */
 
 /* Biome Legend Styles */
 .biome-legend {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background: var(--panel);
-  border: 1px solid #1E8C45;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 11px;
-  color: var(--muted);
-  z-index: 1000;
-  max-width: 140px;
-  backdrop-filter: blur(4px);
-  pointer-events: none;
+  position: absolute; /* Absolute positioning */
+  bottom: 20px; /* Position from bottom */
+  right: 20px; /* Position from right */
+  background: var(--panel); /* Panel color background */
+  border: 1px solid #1E8C45; /* Green border */
+  border-radius: 8px; /* Rounded corners */
+  padding: 12px; /* Internal spacing */
+  font-size: 11px; /* Small font size */
+  color: var(--muted); /* Muted text color */
+  z-index: 1000; /* High stacking order */
+  max-width: 140px; /* Maximum width */
+  backdrop-filter: blur(4px); /* Glass effect */
+  pointer-events: none; /* No interactions */
 }
 
 .biome-legend h4,
 .biome-item,
 .biome-item span {
-  pointer-events: none;
-  user-select: none;
+  pointer-events: none; /* No mouse interactions */
+  user-select: none; /* Prevent text selection */
 }
 
-.biome-legend h4 {
-  margin: 0 0 8px 0;
-  font-size: 12px;
-  color: var(--ink);
-  font-weight: 600;
+.biome-legend h4 {/* Legend heading */
+  margin: 0 0 8px 0; /* Bottom margin only */
+  font-size: 12px; /* 'Biome colors' */
+  color: var(--ink); /* Main text color */
+  font-weight: 600; /* Bold text */
 }
 
-.biome-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 4px;
+.biome-item {/* Legend Items */
+  display: flex; /* Flexbox layout a box that can arrange its child items in rows or columns */
+  align-items: center; /* Center vertically */
+  margin-bottom: 4px; /* Space between items */
 }
 
-.biome-color {
-  width: 12px;
-  height: 12px;
-  margin-right: 8px;
-  border-radius: 2px;
-  border: 1px solid #2a2a2a;
-  flex-shrink: 0;
+.biome-color {/* Biome swatch */
+  width: 12px; /* Fixed width */
+  height: 12px; /* Fixed height */
+  margin-right: 8px; /* Space before text */
+  border-radius: 2px; /* Slightly rounded */
+  border: 1px solid #2a2a2a; /* Dark border */
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
-.biome-forest { background: #3e6b35; }
-.biome-rainforest { background: #2d5a27; }
-.biome-grassland { background: #8a9c5a; }
-.biome-desert { background: #d6bc7a; }
-.biome-tundra { background: #8bc7b3; }
-.biome-ice { background: #ffffff; }
-.biome-mountain { background: #7a7a7a; }
-.biome-mediterranean { background: #8fa85c; }
+.biome-forest { background: #3e6b35; } /* Forest color */
+.biome-rainforest { background: #2d5a27; } /* Rainforest color */
+.biome-grassland { background: #8a9c5a; } /* Grassland color */
+.biome-desert { background: #d6bc7a; } /* Desert color */
+.biome-tundra { background: #8bc7b3; } /* Tundra color */
+.biome-ice { background: #ffffff; } /* Ice color */
+.biome-mountain { background: #7a7a7a; } /* Mountain color */
+.biome-mediterranean { background: #8fa85c; } /* Mediterranean color */
 
-@media (max-width: 768px) {
-  .biome-legend {
-    bottom: 10px;
-    right: 10px;
-    padding: 8px;
-    max-width: 120px;
-    font-size: 10px;
+@media (max-width: 768px) { /* Mobile responsive styles */
+  .biome-legend {/*Legend position */
+    bottom: 10px; /* Closer to bottom */
+    right: 10px; /* Closer to right */
+    padding: 8px; /* Less padding */
+    max-width: 120px; /* Smaller width */
+    font-size: 10px; /* Smaller font */
   }
   
-  .biome-legend h4 {
-    font-size: 11px;
-    margin-bottom: 6px;
+  .biome-legend h4 {/* Legend heading */
+    font-size: 110px; /* Smaller heading */
+    margin-bottom: 6px; /* Less margin */
   }
   
-  .biome-color {
-    width: 10px;
-    height: 10px;
-    margin-right: 6px;
+  .biome-color {/* Biome swatch */
+    width: 10px; /* Smaller swatch */
+    height: 10px; /* Smaller swatch */
+    margin-right: 6px; /* Less spacing */
   }
 }
+/* ============================================ */
 
 body.home {
   background-image: url("https://www.climate-kic.org/wp-content/uploads/2024/03/INFORMA-Opinion-piece-image.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-size: cover; /* Cover entire element */
+  background-position: center; /* Center image */
+  background-repeat: no-repeat; /* No repetition */
 }
 
 body.contact-page {
   background-image: url("https://www.climate-kic.org/wp-content/uploads/2024/03/INFORMA-Opinion-piece-image.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-size: cover; /* Cover entire element */
+  background-position: center; /* Center image */
+  background-repeat: no-repeat; /* No repetition */
+}
+/* ============================================ */
+/* CORRELATIONS PAGE: FULL SCREEN WITH BACKGROUND */
+/* ============================================ */
+
+body.correlation-page {
+  background-image: url("https://www.climate-kic.org/wp-content/uploads/2024/03/INFORMA-Opinion-piece-image.png");
+  background-size: cover; /* Cover entire viewport */
+  background-position: center; /* Center the image */
+  background-attachment: fixed; /* Fixed during scroll */
+  margin: 0; /* No margin */
+  padding: 0; /* No padding */
+  min-height: 130vh; /* Full viewport height */
+}
+
+/* Make main container fill viewport */
+.viz-main {
+  padding: 0; /* No padding */
+  min-height: 100vh; /* Full viewport height */
+  display: flex; /* Flexbox layout */
+  flex-direction: column; /* Vertical stacking */
+}
+
+/* Hero section with glass effect */
+.viz-hero {/* Header of correlation/Title of correlation */
+  background: rgba(1, 79, 49, 0.85); /* Semi-transparent green */
+  backdrop-filter: blur(10px); /* Glass effect */
+  border-bottom: 1px solid rgba(31, 138, 69, 0.4); /* Subtle border */
+  padding: 40px 24px; /* Generous padding */
+  margin: 0; /* No margin */
+}
+
+/* Cards with glass effect */
+.viz-card {/* Box of graphs */
+  background: rgba(1, 79, 49, 0.8); /* Semi-transparent green */
+  backdrop-filter: blur(8px); /* Glass effect */
+  border: 1px solid rgba(31, 138, 69, 0.3); /* Subtle border */
+  border-radius: 20px; /* Rounded corners */
+  padding: 24px; /* Internal spacing */
+}
+
+/* Chart container */
+.chart-wrap {/* Container for charts */
+  background: rgba(0, 40, 20, 0.6); /* Dark semi-transparent */
+  border-radius: 14px; /* Rounded corners */
+  padding: 16px; /* Internal spacing */
+  border: 1px solid rgba(31, 138, 69, 0.2); /* Very subtle border */
+}
+
+/* Chart SVG background */
+.chart-wrap svg {/* SVG charts/Chart container */
+  background: transparent !important; /* No background for SVG */
+}
+
+/* ADDITIONAL SAFETY FIX: Ensure metrics are never hidden */
+*[style*="display: none"] .metric,
+*[style*="visibility: hidden"] .metric,
+*[style*="opacity: 0"] .metric {
+  display: block !important; /* Force display */
+  visibility: visible !important; /* Force visibility */
+  opacity: 1 !important; /* Force opacity */
 }

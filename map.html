@@ -57,29 +57,52 @@
             <div class="metric-value" id="endangeredEndemic">—</div>
           </div>
 
-          <div id="chart" style="margin:10px 0 6px;"></div>
-          <div class="legend">Pie: endemic species by IUCN category (NT, VU, EN, CR, other)</div>
+        <!-- Right column: Data information panel -->
+        <aside class="sidebar"> <!-- Semantic element for supplementary content -->
+          <h2 id="country-title">Click a Continent</h2> <!-- Dynamic title updated by JavaScript -->
+          <p class="small" id="dataContext">The panel will show:</p> <!-- Context description -->
+          
+          <!-- Species data metrics -->
+          <div class="metric"> <!-- Container for a single data metric -->
+            <div class="metric-label">Total endemic species</div> <!-- Metric description -->
+            <div class="metric-value" id="totalEndemic">—</div> <!-- Dynamic value, initially placeholder -->
+            <div class="status" id="endemicStatus"></div> <!-- Optional status indicator (trend, etc.) -->
+          </div> <!-- End of total endemic species metric -->
+          
+          <div class="metric"> <!-- Another metric container -->
+            <div class="metric-label">Threatened endemic species</div> <!-- Description -->
+            <div class="metric-value" id="endangeredEndemic">—</div> <!-- Dynamic value placeholder -->
+          </div> <!-- End of threatened species metric -->
 
-          <div class="metric" style="margin-top:18px;">
-            <div class="metric-label">Latest nominal GDP (USD)</div>
-            <div class="metric-value" id="gdp">—</div>
-            <div class="small" id="gdpYear"></div>
-            <div class="status" id="gdpStatus"></div>
-          </div>
+          <!-- Chart container and description -->
+          <div id="chart" style="margin:10px 0 6px;"></div> <!-- Empty div where D3.js will insert pie chart -->
+          <div class="legend">Pie: endemic species by IUCN category (NT, VU, EN, CR, other)</div> <!-- Chart explanation -->
+          
+          <!-- Economic and demographic metrics -->
+          <div class="metric" style="margin-top:18px;"> <!-- GDP metric with top margin -->
+            <div class="metric-label">Latest nominal GDP (USD)</div> <!-- Description -->
+            <div class="metric-value" id="gdp">—</div> <!-- Dynamic GDP value -->
+            <div class="small" id="gdpYear"></div> <!-- Year of GDP data -->
+            <div class="status" id="gdpStatus"></div> <!-- Status indicator -->
+          </div> <!-- End of GDP metric -->
+          
+          <div class="metric"> <!-- Population metric -->
+            <div class="metric-label">Latest population</div> <!-- Description -->
+            <div class="metric-value" id="population">—</div> <!-- Dynamic population value -->
+            <div class="small" id="popYear"></div> <!-- Year of population data -->
+            <div class="status" id="popStatus"></div> <!-- Status indicator -->
+          </div> <!-- End of population metric -->
 
-          <div class="metric">
-            <div class="metric-label">Latest population</div>
-            <div class="metric-value" id="population">—</div>
-            <div class="small" id="popYear"></div>
-            <div class="status" id="popStatus"></div>
-          </div>
-
-          <div class="note">Data source: QLever Wikidata (live). Tables are fetched once and filtered client-side.</div>
-          <div class="attribution">Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a>.</div>
-        </aside>
-      </div>
-    </div>
-  </main>
+          <!-- Data source and attribution information -->
+          <div class="note">Data source: QLever Wikidata (live). Tables are fetched once and filtered client-side.</div> <!-- Data source note -->
+          <div class="attribution"> <!-- Attribution for map libraries -->
+            Map © <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">world-atlas</a> · <!-- Map data source -->
+            Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3</a>. <!-- Visualization library -->
+          </div> <!-- End of attribution -->
+        </aside> <!-- End of sidebar -->
+      </div> <!-- End of app (two-column layout) -->
+    </div> <!-- End of map-panel -->
+  </main> <!-- End of main content -->
 
   <!-- External assets: D3 for rendering and interactions, TopoJSON for map data conversion, map.js for all map logic and SPARQL data loading. -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>

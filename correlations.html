@@ -1,61 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Correlations · Endemic Species & Economy Explorer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body class="viz">
-  <header>
-    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1>
-    <nav>
-      <a href="index.html">Home</a>
-      <a href="map.html">Interactive map</a>
-      <a href="correlations.html" class="active">Correlations</a>
-      <a href="contact.html">Contact</a>
-    </nav>
-  </header>
+<!DOCTYPE html>                                                                        <!-- HTML5 document declaration -->
+<html lang="en">                                                                       <!-- Root element with English language -->
+<head>                                                                                 <!-- Start of document head -->
+  <meta charset="utf-8" />                                                             <!-- Character encoding -->
+  <title>Correlations · Endemic Species & Economy Explorer</title>                     <!-- Page title -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />              <!-- Responsive viewport -->
+  <link rel="stylesheet" href="style.css" />                                           <!-- External stylesheet -->
+</head>                                                                                <!-- End of head -->
+<body class="viz correlation-page">                                                    <!-- Body with CSS classes -->
+  <header>                                                                             <!-- Page header -->
+    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1>                <!-- Main heading -->
+    <nav>                                                                              <!-- Navigation -->
+      <a href="index.html">Home</a>                                                    <!-- Home link -->
+      <a href="map.html">Interactive map</a>                                           <!-- Map link -->
+      <a href="correlations.html" class="active">Correlations</a>                      <!-- Current page (active) -->
+      <a href="contact.html">Contact</a>                                               <!-- Contact link -->
+    </nav>                                                                             <!-- End navigation -->
+  </header>                                                                            <!-- End header -->
 
-  <main class="viz-main">
-    <section class="hero viz-hero">
-      <div>
-        <h2>Correlations between threatened fractions and socioeconomic indicators</h2>
-        <p>
+  <main class="viz-main">                                                              <!-- Main content -->
+    <section class="hero viz-hero">                                                    <!-- Hero section -->
+      <div>                                                                            <!-- Container -->
+        <h2>Correlations between threatened fractions and socioeconomic indicators</h2> <!-- Section heading -->
+        <p>                                                                            <!-- Empty paragraph -->
           
-        </p>
-        <p id="vizStatus" class="small muted">Loading live data…</p>
-      </div>
-    </section>
+        </p>                                                                           <!-- End paragraph -->
+        <p id="vizStatus" class="small muted">Loading live data…</p>                   <!-- Status message -->
+      </div>                                                                           <!-- End container -->
+    </section>                                                                         <!-- End hero section -->
 
-    <section class="viz-grid">
-      <article class="viz-card">
-        <div class="chart-header">
-          <h3>Threatened fraction vs GDP</h3>
-          <p>Each point is a country. X-axis: GDP (USD, trillions). Y-axis: threatened endemic ÷ total endemic.</p>
-        </div>
-        <div class="chart-wrap">
-          <svg id="chartGDP" role="img" aria-label="Scatter plot showing threatened fraction vs GDP"></svg>
-          <div class="chart-stats" id="statsGDP"></div>
-        </div>
-      </article>
+    <section class="viz-grid">                                                         <!-- Grid section -->
+      <article class="viz-card">                                                       <!-- First chart card -->
+        <div class="chart-header">                                                     <!-- Chart header -->
+          <h3>Threatened fraction vs GDP</h3>                                          <!-- Chart title -->
+          <p>Each point is a country. X-axis: GDP (USD, trillions). Y-axis: threatened endemic ÷ total endemic.</p> <!-- Description -->
+        </div>                                                                         <!-- End header -->
+        <div class="chart-wrap">                                                       <!-- Chart container -->
+          <svg id="chartGDP" role="img" aria-label="Scatter plot showing threatened fraction vs GDP"></svg> <!-- SVG for GDP chart -->
+          <div class="chart-stats" id="statsGDP"></div>                                <!-- Statistics container -->
+        </div>                                                                         <!-- End chart container -->
+      </article>                                                                       <!-- End first card -->
 
-      <article class="viz-card">
-        <div class="chart-header">
-          <h3>Threatened fraction vs Population</h3>
-          <p>Each point is a country. X-axis: population (billions). Y-axis: threatened endemic ÷ total endemic.</p>
-        </div>
-        <div class="chart-wrap">
-          <svg id="chartPOP" role="img" aria-label="Scatter plot showing threatened fraction vs population"></svg>
-          <div class="chart-stats" id="statsPOP"></div>
-        </div>
-      </article>
-    </section>
-  </main>
+      <article class="viz-card">                                                       <!-- Second chart card -->
+        <div class="chart-header">                                                     <!-- Chart header -->
+          <h3>Threatened fraction vs Population</h3>                                   <!-- Chart title -->
+          <p>Each point is a country. X-axis: population (billions). Y-axis: threatened endemic ÷ total endemic.</p> <!-- Description -->
+        </div>                                                                         <!-- End header -->
+        <div class="chart-wrap">                                                       <!-- Chart container -->
+          <svg id="chartPOP" role="img" aria-label="Scatter plot showing threatened fraction vs population"></svg> <!-- SVG for population chart -->
+          <div class="chart-stats" id="statsPOP"></div>                                <!-- Statistics container -->
+        </div>                                                                         <!-- End chart container -->
+      </article>                                                                       <!-- End second card -->
+    </section>                                                                         <!-- End grid section -->
+  </main>                                                                              <!-- End main content -->
 
-  <div class="chart-tooltip" id="vizTooltip" aria-hidden="true"></div>
+  <div class="chart-tooltip" id="vizTooltip" aria-hidden="true"></div>                 <!-- Tooltip element -->
 
-  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-  <script src="correlations.js"></script>
-</body>
-</html>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>                            <!-- D3.js library -->
+  <script src="correlations.js"></script>                                              <!-- Custom JavaScript -->
+<body class="viz correlation-page">                                                    <!-- Duplicate body tag (ERROR) -->
+</html>                                                                                <!-- End of document -->

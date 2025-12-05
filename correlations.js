@@ -16,128 +16,128 @@ async function initCorrelations() {
       runSparqlGETWithRetry(Q_GDP),
       runSparqlGETWithRetry(Q_POP)
     ]);
-    const endemicTable = buildEndemicMap(endData);
-    const gdpTable = buildGdpMap(gdpData);
-    const populationTable = buildPopulationMap(popData);
-    const dataset = combineDataset(endemicTable, gdpTable, populationTable);
-    if (!dataset.length) {
-      setStatus('No countries meet the minimum endemic species threshold yet.');
-      return;
+    const endemicTable = buildEndemicMap(endData);                                  // Parse endemic data to Map
+    const gdpTable = buildGdpMap(gdpData);                                          // Parse GDP data to Map
+    const populationTable = buildPopulationMap(popData);                            // Parse population data to Map
+    const dataset = combineDataset(endemicTable, gdpTable, populationTable);        // Combine all datasets
+    if (!dataset.length) {                                                          // Check if dataset is empty
+      setStatus('No countries meet the minimum endemic species threshold yet.');    // Update status message
+      return;                                                                       // Exit function
     }
-    setStatus(`Loaded ${dataset.length} countries (≥ ${MIN_ENDEMIC} endemic species).`);
-    renderCharts(dataset);
-  } catch (err) {
-    console.error(err);
-    setStatus('Unable to fetch data from the SPARQL endpoint right now. Please retry.');
+    setStatus(`Loaded ${dataset.length} countries (≥ ${MIN_ENDEMIC} endemic species).`); // Success message
+    renderCharts(dataset);                                                          // Render correlation charts
+  } catch (err) {                                                                   // Catch any errors
+    console.error(err);                                                             // Log error to console
+    setStatus('Unable to fetch data from the SPARQL endpoint right now. Please retry.'); // Error message
   }
 }
 
-function setStatus(text) {
-  if (statusEl) statusEl.textContent = text;
+function setStatus(text) {                                                          // Function to update status display
+  if (statusEl) statusEl.textContent = text;                                        // Update if element exists
 }
 
-function combineDataset(endemicTable, gdpTable, populationTable) {
-  const rows = [];
-  endemicTable.forEach((endRow, isoNumeric) => {
-    const gRow = gdpTable.get(isoNumeric);
-    const pRow = populationTable.get(isoNumeric);
-    if (!gRow || !pRow) return;
-    const total = +(endRow.totalEndemicSpecies || 0);
-    const nt = +(endRow.nearThreatenedEndemicSpecies || 0);
-    const vu = +(endRow.vulnerableEndemicSpecies || 0);
-    const en = +(endRow.endangeredEndemicSpecies || 0);
-    const cr = +(endRow.criticallyEndangeredEndemicSpecies || 0);
-    const threatened = nt + vu + en + cr;
-    if (!Number.isFinite(total) || total < MIN_ENDEMIC || total === 0) return;
-    const fraction = threatened / total;
-    rows.push({
-      isoNumeric,
-      countryLabel: endRow.countryLabel || gRow.countryLabel || pRow.countryLabel || `ISO ${isoNumeric}`,
-      totalEndemic: total,
-      threatenedEndemic: threatened,
-      fraction,
-      gdpUSD: +(gRow.gdpUSD || 0),
-      gdpYear: gRow.gdpYear || '',
-      population: +(pRow.population || 0),
-      popYear: pRow.popYear || ''
+function combineDataset(endemicTable, gdpTable, populationTable) {                  // Combine three datasets into one
+  const rows = [];                                                                  // Initialize result array
+  endemicTable.forEach((endRow, isoNumeric) => {                                    // Iterate through endemic data
+    const gRow = gdpTable.get(isoNumeric);                                          // Get matching GDP data
+    const pRow = populationTable.get(isoNumeric);                                   // Get matching population data
+    if (!gRow || !pRow) return;                                                     // Skip if missing data
+    const total = +(endRow.totalEndemicSpecies || 0);                               // Convert total to number
+    const nt = +(endRow.nearThreatenedEndemicSpecies || 0);                         // Convert NT count to number
+    const vu = +(endRow.vulnerableEndemicSpecies || 0);                             // Convert VU count to number
+    const en = +(endRow.endangeredEndemicSpecies || 0);                             // Convert EN count to number
+    const cr = +(endRow.criticallyEndangeredEndemicSpecies || 0);                   // Convert CR count to number
+    const threatened = nt + vu + en + cr;                                           // Calculate total threatened
+    if (!Number.isFinite(total) || total < MIN_ENDEMIC || total === 0) return;      // Apply minimum threshold filter
+    const fraction = threatened / total;                                             // Calculate threatened fraction
+    rows.push({                                                                     // Add combined row to array
+      isoNumeric,                                                                   // ISO numeric code
+      countryLabel: endRow.countryLabel || gRow.countryLabel || pRow.countryLabel || `ISO ${isoNumeric}`, // Country name
+      totalEndemic: total,                                                          // Total endemic species
+      threatenedEndemic: threatened,                                                // Threatened endemic species
+      fraction,                                                                     // Threatened fraction (0-1)
+      gdpUSD: +(gRow.gdpUSD || 0),                                                  // GDP in USD
+      gdpYear: gRow.gdpYear || '',                                                  // Year of GDP data
+      population: +(pRow.population || 0),                                          // Population count
+      popYear: pRow.popYear || ''                                                   // Year of population data
     });
   });
-  return rows;
+  return rows;                                                                      // Return combined dataset
 }
 
-function renderCharts(data) {
-  const configs = [
-    {
-      svgId: 'chartGDP',
-      statsId: 'statsGDP',
-      xField: 'gdpUSD',
-      xLabelBase: 'GDP (USD)',
-      tooltipFmt: (d) => formatNumber(d.gdpUSD, 'usd'),
-      tooltipLabel: 'GDP',
-      domainPadding: 0.12
+function renderCharts(data) {                                                       // Function to render both charts
+  const configs = [                                                                 // Configuration for each chart
+    {                                                                               // GDP chart configuration
+      svgId: 'chartGDP',                                                            // SVG element ID
+      statsId: 'statsGDP',                                                          // Statistics display ID
+      xField: 'gdpUSD',                                                             // Data field for x-axis
+      xLabelBase: 'GDP (USD)',                                                      // Base label for x-axis
+      tooltipFmt: (d) => formatNumber(d.gdpUSD, 'usd'),                             // Tooltip formatting function
+      tooltipLabel: 'GDP',                                                          // Tooltip label
+      domainPadding: 0.12                                                           // X-axis domain padding
     },
-    {
-      svgId: 'chartPOP',
-      statsId: 'statsPOP',
-      xField: 'population',
-      xLabelBase: 'Population',
-      tooltipFmt: (d) => formatNumber(d.population, 'pop'),
-      tooltipLabel: 'Population',
-      domainPadding: 0.08
+    {                                                                               // Population chart configuration
+      svgId: 'chartPOP',                                                            // SVG element ID
+      statsId: 'statsPOP',                                                          // Statistics display ID
+      xField: 'population',                                                         // Data field for x-axis
+      xLabelBase: 'Population',                                                     // Base label for x-axis
+      tooltipFmt: (d) => formatNumber(d.population, 'pop'),                         // Tooltip formatting function
+      tooltipLabel: 'Population',                                                   // Tooltip label
+      domainPadding: 0.08                                                           // X-axis domain padding
     }
   ];
 
-  configs.forEach(cfg => renderScatter(cfg, data));
+  configs.forEach(cfg => renderScatter(cfg, data));                                 // Render each chart
 }
 
-function renderScatter(cfg, data) {
-  const svg = d3.select(`#${cfg.svgId}`);
-  if (svg.empty()) return;
-  svg.selectAll('*').remove();
+function renderScatter(cfg, data) {                                                 // Function to render a scatter plot
+  const svg = d3.select(`#${cfg.svgId}`);                                           // Select SVG element
+  if (svg.empty()) return;                                                          // Exit if SVG doesn't exist
+  svg.selectAll('*').remove();                                                      // Clear existing content
 
-  const maxRaw = d3.max(data, d => d[cfg.xField]) || 0;
-  const scale = chooseScale(maxRaw, cfg.xLabelBase || cfg.xLabel);
-  const factor = scale.factor || 1;
-  const xLabel = scale.label || (cfg.xLabelBase || '');
+  const maxRaw = d3.max(data, d => d[cfg.xField]) || 0;                             // Find maximum x-value
+  const scale = chooseScale(maxRaw, cfg.xLabelBase || cfg.xLabel);                  // Determine appropriate scale
+  const factor = scale.factor || 1;                                                 // Division factor for display
+  const xLabel = scale.label || (cfg.xLabelBase || '');                             // Final x-axis label
 
-  const filtered = data
-    .filter(row => Number.isFinite(row[cfg.xField]) && row[cfg.xField] > 0)
-    .map(row => ({
-      ...row,
-      x: row[cfg.xField] / factor,
-      y: row.fraction
+  const filtered = data                                                             // Filter and transform data
+    .filter(row => Number.isFinite(row[cfg.xField]) && row[cfg.xField] > 0)         // Keep valid positive values
+    .map(row => ({                                                                  // Transform each row
+      ...row,                                                                       // Copy all properties
+      x: row[cfg.xField] / factor,                                                  // Scale x-value
+      y: row.fraction                                                               // y-value = threatened fraction
     }));
 
-  if (!filtered.length) {
-    svg.append('text').attr('x', 12).attr('y', 24).attr('fill', '#a8b3c7').text('No data available.');
-    const statsSlot = document.getElementById(cfg.statsId);
-    if (statsSlot) statsSlot.textContent = 'No data available.';
-    return;
+  if (!filtered.length) {                                                           // Check if any data remains
+    svg.append('text').attr('x', 12).attr('y', 24).attr('fill', '#a8b3c7').text('No data available.'); // Show message
+    const statsSlot = document.getElementById(cfg.statsId);                         // Get stats element
+    if (statsSlot) statsSlot.textContent = 'No data available.';                    // Update stats display
+    return;                                                                         // Exit function
   }
 
-  const margin = { top: 24, right: 28, bottom: 60, left: 60 };
-  const width = Math.min(550, svg.node().parentNode?.clientWidth || 520);
-  const height = 360;
-  svg.attr('width', width).attr('height', height);
+  const margin = { top: 24, right: 28, bottom: 60, left: 60 };                      // Chart margins
+  const width = Math.min(550, svg.node().parentNode?.clientWidth || 520);           // Responsive width
+  const height = 360;                                                               // Fixed height
+  svg.attr('width', width).attr('height', height);                                  // Set SVG dimensions
 
-  const xMax = d3.max(filtered, d => d.x) || 1;
-  const yMax = d3.max(filtered, d => d.y) || 0.2;
+  const xMax = d3.max(filtered, d => d.x) || 1;                                     // Maximum x-value after scaling
+  const yMax = d3.max(filtered, d => d.y) || 0.2;                                   // Maximum y-value
 
-  const x = d3.scaleLinear()
-    .domain([0, xMax * (1 + (cfg.domainPadding || 0.1))])
-    .range([margin.left, width - margin.right]);
+  const x = d3.scaleLinear()                                                        // Create x-scale
+    .domain([0, xMax * (1 + (cfg.domainPadding || 0.1))])                           // Domain with padding
+    .range([margin.left, width - margin.right]);                                    // Pixel range
 
-  const regression = linearRegression(filtered);
-  const predicted = regression.intercept + regression.slope * x.domain()[1];
-  const yMaxCandidate = Math.max(yMax, regression.intercept, predicted, 0.05);
-  const y = d3.scaleLinear()
-    .domain([0, Math.min(1, yMaxCandidate * 1.15)])
-    .range([height - margin.bottom, margin.top]);
-  const group = svg.append('g');
+  const regression = linearRegression(filtered);                                    // Calculate linear regression
+  const predicted = regression.intercept + regression.slope * x.domain()[1];        // Predicted y at max x
+  const yMaxCandidate = Math.max(yMax, regression.intercept, predicted, 0.05);      // Ensure all points visible
+  const y = d3.scaleLinear()                                                        // Create y-scale
+    .domain([0, Math.min(1, yMaxCandidate * 1.15)])                                 // Domain with padding, max 1
+    .range([height - margin.bottom, margin.top]);                                   // Pixel range (inverted)
+  const group = svg.append('g');                                                    // Create main drawing group
 
-  const linePoints = [
-    { x: 0, y: regression.intercept },
-    { x: x.domain()[1], y: regression.intercept + regression.slope * x.domain()[1] }
+  const linePoints = [                                                              // Regression line endpoints
+    { x: 0, y: regression.intercept },                                              // Start at x=0
+    { x: x.domain()[1], y: regression.intercept + regression.slope * x.domain()[1] } // End at max x
   ];
 
   group.append('g')
@@ -192,91 +192,92 @@ function renderScatter(cfg, data) {
   writeStats(cfg.statsId, regression, filtered.length);
 }
 
-function showTooltip(event, datum, cfg, svgNode) {
-  if (!tooltip) return;
-  tooltip.style.opacity = '1';
-  tooltip.setAttribute('aria-hidden', 'false');
-  const x = event.pageX || event.clientX || 0;
-  const y = event.pageY || event.clientY || 0;
-  const left = x + 14;
-  const top = y - 12;
-  const maxLeft = window.innerWidth - 240; // prevent clipping
-  const maxTop = window.innerHeight - 120;
-  tooltip.style.left = `${Math.min(left, maxLeft)}px`;
-  tooltip.style.top = `${Math.min(top, maxTop)}px`;
-  tooltip.innerHTML = `
-    <strong>${datum.countryLabel}</strong><br>
-    Threatened fraction: ${(datum.y * 100).toFixed(1)}%<br>
-    ${cfg.tooltipLabel || cfg.xLabel}: ${cfg.tooltipFmt(datum)}<br>
-    Total endemic: ${fmtInt(datum.totalEndemic)} | Threatened: ${fmtInt(datum.threatenedEndemic)}
+function showTooltip(event, datum, cfg, svgNode) {                                  // Show tooltip on hover
+  if (!tooltip) return;                                                             // Exit if no tooltip element
+  tooltip.style.opacity = '1';                                                      // Make tooltip visible
+  tooltip.setAttribute('aria-hidden', 'false');                                     // Accessibility: mark as visible
+  const x = event.pageX || event.clientX || 0;                                      // Mouse x-coordinate
+  const y = event.pageY || event.clientY || 0;                                      // Mouse y-coordinate
+  const left = x + 14;                                                              // Position to right of cursor
+  const top = y - 12;                                                               // Position above cursor
+  const maxLeft = window.innerWidth - 240;                                          // Prevent going off right edge
+  const maxTop = window.innerHeight - 120;                                          // Prevent going off bottom edge
+  tooltip.style.left = `${Math.min(left, maxLeft)}px`;                              // Set left position
+  tooltip.style.top = `${Math.min(top, maxTop)}px`;                                 // Set top position
+  tooltip.innerHTML = `                                                             // Set tooltip content
+    <strong>${datum.countryLabel}</strong><br>                                      // Country name
+    Threatened fraction: ${(datum.y * 100).toFixed(1)}%<br>                         // Threatened percentage
+    ${cfg.tooltipLabel || cfg.xLabel}: ${cfg.tooltipFmt(datum)}<br>                 // GDP/Population value
+    Total endemic: ${fmtInt(datum.totalEndemic)} | Threatened: ${fmtInt(datum.threatenedEndemic)} // Species counts
   `;
 }
 
-function hideTooltip() {
-  if (!tooltip) return;
-  tooltip.style.opacity = '0';
-  tooltip.setAttribute('aria-hidden', 'true');
+function hideTooltip() {                                                            // Hide tooltip
+  if (!tooltip) return;                                                             // Exit if no tooltip element
+  tooltip.style.opacity = '0';                                                      // Make tooltip transparent
+  tooltip.setAttribute('aria-hidden', 'true');                                      // Accessibility: mark as hidden
 }
 
-function writeStats(targetId, regression, n) {
-  const el = document.getElementById(targetId);
-  if (!el) return;
-  const slope = regression.slope?.toFixed(4) || '0';
-  const intercept = regression.intercept?.toFixed(4) || '0';
-  const r = regression.r?.toFixed(3) || '0';
-  const r2 = regression.r2?.toFixed(3) || '0';
-  el.innerHTML = `
-    <p><strong>Linear regression</strong> (y = a·x + b)</p>
-    <p>n = ${n}</p>
-    <p>a (slope) ≈ ${slope}</p>
-    <p>b (intercept) ≈ ${intercept}</p>
-    <p>r ≈ ${r}</p>
-    <p>R² ≈ ${r2}</p>
+function writeStats(targetId, regression, n) {                                      // Display regression statistics
+  const el = document.getElementById(targetId);                                     // Get target element
+  if (!el) return;                                                                  // Exit if element doesn't exist
+  const slope = regression.slope?.toFixed(4) || '0';                                // Format slope to 4 decimals
+  const intercept = regression.intercept?.toFixed(4) || '0';                        // Format intercept to 4 decimals
+  const r = regression.r?.toFixed(3) || '0';                                        // Format correlation coefficient to 3 decimals
+  const r2 = regression.r2?.toFixed(3) || '0';                                      // Format R-squared to 3 decimals
+  el.innerHTML = `                                                                  // Set HTML content
+    <p><strong>Linear regression</strong> (y = a·x + b)</p>                         // Title
+    <p>n = ${n}</p>                                                                 // Sample size
+    <p>a (slope) ≈ ${slope}</p>                                                     // Slope
+    <p>b (intercept) ≈ ${intercept}</p>                                             // Intercept
+    <p>r ≈ ${r}</p>                                                                 // Correlation coefficient
+    <p>R² ≈ ${r2}</p>                                                               // Coefficient of determination
   `;
 }
 
-function linearRegression(points) {
-  const n = points.length;
-  if (!n) return { slope: 0, intercept: 0, r: 0, r2: 0 };
-  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0;
-  points.forEach(p => {
-    sumX += p.x;
-    sumY += p.y;
-    sumXY += p.x * p.y;
-    sumXX += p.x * p.x;
-    sumYY += p.y * p.y;
+function linearRegression(points) {                                                 // Calculate linear regression
+  const n = points.length;                                                          // Number of data points
+  if (!n) return { slope: 0, intercept: 0, r: 0, r2: 0 };                          // Default if no points
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0;                         // Initialize sums
+  points.forEach(p => {                                                             // Loop through points
+    sumX += p.x;                                                                    // Sum of x values
+    sumY += p.y;                                                                    // Sum of y values
+    sumXY += p.x * p.y;                                                             // Sum of x*y products
+    sumXX += p.x * p.x;                                                             // Sum of x squared
+    sumYY += p.y * p.y;                                                             // Sum of y squared
   });
-  const denom = n * sumXX - sumX * sumX;
-  const slope = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
-  const intercept = (sumY - slope * sumX) / n;
-  const rDenom = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
-  const r = rDenom ? (n * sumXY - sumX * sumY) / rDenom : 0;
-  return { slope, intercept, r, r2: r * r };
+  const denom = n * sumXX - sumX * sumX;                                            // Denominator for slope calculation
+  const slope = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;                // Calculate slope
+  const intercept = (sumY - slope * sumX) / n;                                      // Calculate intercept
+  const rDenom = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));  // Denominator for r
+  const r = rDenom ? (n * sumXY - sumX * sumY) / rDenom : 0;                        // Calculate correlation coefficient
+  return { slope, intercept, r, r2: r * r };                                        // Return all values
 }
 
-function chooseScale(maxVal, baseLabel) {
-  if (!maxVal || maxVal <= 0) return { factor: 1, label: baseLabel };
-  if (maxVal >= 1e12) return { factor: 1e12, label: `${baseLabel} (trillions)` };
-  if (maxVal >= 1e9) return { factor: 1e9, label: `${baseLabel} (billions)` };
-  return { factor: 1e6, label: `${baseLabel} (millions)` };
+function chooseScale(maxVal, baseLabel) {                                           // Determine appropriate scale for large numbers
+  if (!maxVal || maxVal <= 0) return { factor: 1, label: baseLabel };               // No scaling needed
+  if (maxVal >= 1e12) return { factor: 1e12, label: `${baseLabel} (trillions)` };   // Trillions scale
+  if (maxVal >= 1e9) return { factor: 1e9, label: `${baseLabel} (billions)` };      // Billions scale
+  return { factor: 1e6, label: `${baseLabel} (millions)` };                         // Millions scale
 }
 
-async function runSparqlGETWithRetry(query, { retries = 3, baseDelayMs = 400 } = {}) {
-  let attempt = 0;
-  while (true) {
-    try {
-      const res = await fetch(`${QLEVER}?query=${encodeURIComponent(query)}`, { headers: ACCEPT_JSON });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      attempt++;
-      if (attempt > retries) throw err;
-      const delay = baseDelayMs * Math.pow(2, attempt - 1);
-      await new Promise(resolve => setTimeout(resolve, delay));
+async function runSparqlGETWithRetry(query, { retries = 3, baseDelayMs = 400 } = {}) { // Fetch with retry logic
+  let attempt = 0;                                                                  // Attempt counter
+  while (true) {                                                                    // Infinite loop (breaks on success or max retries)
+    try {                                                                           // Try to fetch
+      const res = await fetch(`${QLEVER}?query=${encodeURIComponent(query)}`, { headers: ACCEPT_JSON }); // Send request
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);                           // Check HTTP status
+      return await res.json();                                                      // Return JSON response
+    } catch (err) {                                                                 // Handle error
+      attempt++;                                                                    // Increment attempt counter
+      if (attempt > retries) throw err;                                             // Throw error if max retries reached
+      const delay = baseDelayMs * Math.pow(2, attempt - 1);                         // Exponential backoff delay
+      await new Promise(resolve => setTimeout(resolve, delay));                     // Wait before retrying
     }
   }
 }
 
+// SPARQL query that returns endemic species counts and threat categories per country
 const Q_END_EMD = `
 PREFIX wd:   <http://www.wikidata.org/entity/>
 PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
@@ -360,6 +361,7 @@ GROUP BY ?country
 ORDER BY DESC(?totalEndemicSpecies)
 `;
 
+// SPARQL query that returns the latest GDP value and year per country
 const Q_GDP = `
 PREFIX wd:   <http://www.wikidata.org/entity/>
 PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
@@ -399,6 +401,7 @@ GROUP BY ?country
 ORDER BY DESC(?gdpUSD)
 `;
 
+// SPARQL query that returns the latest population value and year per country
 const Q_POP = `
 PREFIX wd:   <http://www.wikidata.org/entity/>
 PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
@@ -438,80 +441,80 @@ GROUP BY ?country
 ORDER BY DESC(?population)
 `;
 
-function buildEndemicMap(json) {
-  const m = new Map();
-  const rows = json?.results?.bindings || [];
-  for (const r of rows) {
-    const isoNumStr = r.isoNum?.value;
-    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
-    if (!Number.isFinite(isoInt)) continue;
-    const nt = +(r.nearThreatenedEndemicSpecies?.value || 0);
-    const vu = +(r.vulnerableEndemicSpecies?.value || 0);
-    const en = +(r.endangeredEndemicSpecies?.value || 0);
-    const cr = +(r.criticallyEndangeredEndemicSpecies?.value || 0);
-    m.set(isoInt, {
-      countryLabel: r.countryLabel?.value || '',
-      iso3: r.iso3?.value || '',
-      isoNum: isoNumStr,
-      totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),
-      nearThreatenedEndemicSpecies: nt,
-      vulnerableEndemicSpecies: vu,
-      endangeredEndemicSpecies: en,
-      criticallyEndangeredEndemicSpecies: cr
+function buildEndemicMap(json) {                                                    // Parse endemic JSON into Map
+  const m = new Map();                                                              // Create Map
+  const rows = json?.results?.bindings || [];                                       // Get rows or empty array
+  for (const r of rows) {                                                           // Loop through rows
+    const isoNumStr = r.isoNum?.value;                                              // Get ISO numeric code string
+    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;                       // Convert to integer
+    if (!Number.isFinite(isoInt)) continue;                                         // Skip invalid ISO codes
+    const nt = +(r.nearThreatenedEndemicSpecies?.value || 0);                       // NT count
+    const vu = +(r.vulnerableEndemicSpecies?.value || 0);                           // VU count
+    const en = +(r.endangeredEndemicSpecies?.value || 0);                           // EN count
+    const cr = +(r.criticallyEndangeredEndemicSpecies?.value || 0);                 // CR count
+    m.set(isoInt, {                                                                 // Add to Map
+      countryLabel: r.countryLabel?.value || '',                                    // Country name
+      iso3: r.iso3?.value || '',                                                    // ISO 3-letter code
+      isoNum: isoNumStr,                                                            // ISO numeric string
+      totalEndemicSpecies: +(r.totalEndemicSpecies?.value || 0),                    // Total endemic
+      nearThreatenedEndemicSpecies: nt,                                             // NT count
+      vulnerableEndemicSpecies: vu,                                                 // VU count
+      endangeredEndemicSpecies: en,                                                 // EN count
+      criticallyEndangeredEndemicSpecies: cr                                        // CR count
     });
   }
-  return m;
+  return m;                                                                         // Return Map
 }
 
-function buildGdpMap(json) {
-  const m = new Map();
-  const rows = json?.results?.bindings || [];
-  for (const r of rows) {
-    const isoNumStr = r.isoNum?.value;
-    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
-    if (!Number.isFinite(isoInt)) continue;
-    m.set(isoInt, {
-      countryLabel: r.countryLabel?.value || '',
-      iso3: r.iso3?.value || '',
-      isoNum: isoNumStr,
-      gdpUSD: +(r.gdpUSD?.value || 0),
-      gdpYear: r.gdpYear?.value || ''
+function buildGdpMap(json) {                                                        // Parse GDP JSON into Map
+  const m = new Map();                                                              // Create Map
+  const rows = json?.results?.bindings || [];                                       // Get rows or empty array
+  for (const r of rows) {                                                           // Loop through rows
+    const isoNumStr = r.isoNum?.value;                                              // Get ISO numeric code string
+    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;                       // Convert to integer
+    if (!Number.isFinite(isoInt)) continue;                                         // Skip invalid ISO codes
+    m.set(isoInt, {                                                                 // Add to Map
+      countryLabel: r.countryLabel?.value || '',                                    // Country name
+      iso3: r.iso3?.value || '',                                                    // ISO 3-letter code
+      isoNum: isoNumStr,                                                            // ISO numeric string
+      gdpUSD: +(r.gdpUSD?.value || 0),                                              // GDP value
+      gdpYear: r.gdpYear?.value || ''                                               // GDP year
     });
   }
-  return m;
+  return m;                                                                         // Return Map
 }
 
-function buildPopulationMap(json) {
-  const m = new Map();
-  const rows = json?.results?.bindings || [];
-  for (const r of rows) {
-    const isoNumStr = r.isoNum?.value;
-    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;
-    if (!Number.isFinite(isoInt)) continue;
-    m.set(isoInt, {
-      countryLabel: r.countryLabel?.value || '',
-      iso3: r.iso3?.value || '',
-      isoNum: isoNumStr,
-      population: +(r.population?.value || 0),
-      popYear: r.popYear?.value || ''
+function buildPopulationMap(json) {                                                 // Parse population JSON into Map
+  const m = new Map();                                                              // Create Map
+  const rows = json?.results?.bindings || [];                                       // Get rows or empty array
+  for (const r of rows) {                                                           // Loop through rows
+    const isoNumStr = r.isoNum?.value;                                              // Get ISO numeric code string
+    const isoInt = isoNumStr ? parseInt(isoNumStr, 10) : NaN;                       // Convert to integer
+    if (!Number.isFinite(isoInt)) continue;                                         // Skip invalid ISO codes
+    m.set(isoInt, {                                                                 // Add to Map
+      countryLabel: r.countryLabel?.value || '',                                    // Country name
+      iso3: r.iso3?.value || '',                                                    // ISO 3-letter code
+      isoNum: isoNumStr,                                                            // ISO numeric string
+      population: +(r.population?.value || 0),                                      // Population value
+      popYear: r.popYear?.value || ''                                               // Population year
     });
   }
-  return m;
+  return m;                                                                         // Return Map
 }
 
-function formatNumber(value, type) {
-  if (!Number.isFinite(value)) return '—';
-  if (type === 'usd') {
-    if (value >= 1e12) return `${(value / 1e12).toFixed(2)} T USD`;
-    if (value >= 1e9) return `${(value / 1e9).toFixed(2)} B USD`;
-    return `${fmtInt(Math.round(value))} USD`;
+function formatNumber(value, type) {                                                // Format numbers for display
+  if (!Number.isFinite(value)) return '—';                                          // Return dash for invalid numbers
+  if (type === 'usd') {                                                             // USD formatting
+    if (value >= 1e12) return `${(value / 1e12).toFixed(2)} T USD`;                 // Trillions
+    if (value >= 1e9) return `${(value / 1e9).toFixed(2)} B USD`;                   // Billions
+    return `${fmtInt(Math.round(value))} USD`;                                      // Normal formatting
   }
-  if (type === 'pop') {
-    if (value >= 1e9) return `${(value / 1e9).toFixed(2)} B people`;
-    if (value >= 1e6) return `${(value / 1e6).toFixed(2)} M people`;
-    return `${fmtInt(Math.round(value))} people`;
+  if (type === 'pop') {                                                             // Population formatting
+    if (value >= 1e9) return `${(value / 1e9).toFixed(2)} B people`;                // Billions
+    if (value >= 1e6) return `${(value / 1e6).toFixed(2)} M people`;                // Millions
+    return `${fmtInt(Math.round(value))} people`;                                   // Normal formatting
   }
-  return fmtInt(Math.round(value));
+  return fmtInt(Math.round(value));                                                 // Default formatting
 }
 
-initCorrelations();
+initCorrelations();                                                                  // Start the application
