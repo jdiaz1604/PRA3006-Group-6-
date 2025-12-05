@@ -1,14 +1,15 @@
 :root {
-  /* Dark green palette based on your image */
-      --bg:#003a29;          /* deep dark green background */
-      --panel:#014f31;       /* dark green panels */
-      --ink:#e9ffee;         /* soft white-green text */
-      --muted:#a5c7af;       /* muted green-gray text */
+  /* ============ COLOR PALETTE (Change these to modify whole app colors) ============ */
+      --bg:#003a29;          /* Background (dark green) - Change this to modify overall bg color */
+      --panel:#014f31;       /* Panel/card background (dark green) */
+      --ink:#e9ffee;         /* Text color (light cream) */
+      --muted:#a5c7af;       /* Muted/secondary text (gray-green) */
 
-      --accent:#1E8C45;      /* medium green accent */
-      --accent-light:#58BB43;
-      --accent-bright:#9BE931;
-      --accent-lime:#C1FF1C;
+      /* ============ ACCENT COLORS (Used for highlights/buttons) ============ */
+      --accent:#1E8C45;      /* Main accent color (medium green) - Change for button colors */
+      --accent-light:#58BB43;  /* Light green for hover states */
+      --accent-bright:#9BE931; /* Bright green highlight */
+      --accent-lime:#C1FF1C;   /* Lime green accent */
 }
 
 * { box-sizing:border-box; }
@@ -133,12 +134,12 @@ main { display:flex; flex-direction:column; gap:40px; }
 .chart-wrap svg { width:100%; height:320px; display:block; background:var(--panel-dark); border-radius:14px; }
 .chart-stats { margin-top:6px; font-size:12px; color:var(--muted); line-height:1.4; }
 .muted { color:var(--muted); }
-/* Map Styles with Realistic Biome Colors */
+/* ============ MAP STYLING & BIOME COLORS ============ */
 .map-root path { transition:fill .2s, opacity .2s; }
-.sphere { fill:#1a3a5f; stroke:#2a4a6f; stroke-width:1; }
+.sphere { fill:#1a3a5f; stroke:#2a4a6f; stroke-width:1; }  /* Ocean background color */
 
 .continent, .country { 
-  stroke:#1a1a1a; 
+  stroke:#000000; 
   stroke-width:0.5; 
   cursor:pointer; 
 }
@@ -147,8 +148,8 @@ main { display:flex; flex-direction:column; gap:40px; }
 .continent { fill: #4a7b3d; }
 .country { fill: #4a7b3d; }
 
-/* Continent Colors - Satellite Inspired */
-.continent[data-continent="north-america"] { fill: #3e6b35; }
+/* ============ CONTINENT COLORS (Change these to modify continent appearance) ============ */
+.continent[data-continent="north-america"] { fill: #3e6b35; }  /* Change color here */
 .continent[data-continent="south-america"] { fill: #2d5a27; }
 .continent[data-continent="europe"] { fill: #3e6b35; }
 .continent[data-continent="africa"] { fill: #8a9c5a; }
@@ -156,23 +157,23 @@ main { display:flex; flex-direction:column; gap:40px; }
 .continent[data-continent="oceania"] { fill: #d6bc7a; }
 .continent[data-continent="antarctica"] { fill: #e8f0f5; }
 
-/* Country Biome Colors - Satellite Inspired */
-.country[data-biome="desert"] { fill: #d6bc7a; }
-.country[data-biome="rainforest"] { fill: #2d5a27; }
-.country[data-biome="forest"] { fill: #3e6b35; }
-.country[data-biome="grassland"] { fill: #8a9c5a; }
-.country[data-biome="tundra"] { fill: #acc7b7; }
-.country[data-biome="ice"] { fill: #ffffff; }
-.country[data-biome="mountain"] { fill: #7a7a7a; }
-.country[data-biome="mediterranean"] { fill: #8fa85c; }
+/* ============ COUNTRY BIOME COLORS (Change these to modify biome appearance) ============ */
+.country[data-biome="desert"] { fill: #d6bc7a; }       /* Desert color */
+.country[data-biome="rainforest"] { fill: #2d5a27; }  /* Rainforest color (dark green) */
+.country[data-biome="forest"] { fill: #3e6b35; }      /* Forest color (medium green) */
+.country[data-biome="grassland"] { fill: #8a9c5a; }   /* Grassland/Savanna color (light green) */
+.country[data-biome="tundra"] { fill: #acc7b7; }      /* Tundra color (gray-green) */
+.country[data-biome="ice"] { fill: #ffffff; }         /* Ice/Polar color (white) */
+.country[data-biome="mountain"] { fill: #7a7a7a; }    /* Mountain color (gray) */
+.country[data-biome="mediterranean"] { fill: #8fa85c; } /* Mediterranean color */
 
-/* Hover and selection states */
+/* ============ HOVER & SELECTION STATES ============ */
 .continent:hover, .country:hover { 
-  fill:#6fb1a0 !important; 
+  fill:#6fb1a0 !important;  /* Color when hovering over a region */
   filter: brightness(1.1); 
 }
 .continent-selected, .country-selected { 
-  fill:#2f6393 !important; 
+  fill:#2f6393 !important;  /* Color when selected/clicked */
   stroke:#7ba3ff; 
   stroke-width:1.5; 
 }

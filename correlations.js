@@ -1,10 +1,12 @@
-const QLEVER = 'https://qlever.dev/api/wikidata';
-const ACCEPT_JSON = { 'Accept': 'application/sparql-results+json' };
-const MIN_ENDEMIC = 50;
+// ============ CONFIGURATION & DATA SOURCES ============
+const QLEVER = 'https://qlever.dev/api/wikidata';  // SPARQL endpoint
+const ACCEPT_JSON = { 'Accept': 'application/sparql-results+json' };  // Request JSON
+const MIN_ENDEMIC = 50;  // Filter: only countries with ≥50 endemic species
 
-const statusEl = document.getElementById('vizStatus');
-const tooltip = document.getElementById('vizTooltip');
-const fmtInt = d3.format(',d');
+// ============ DOM ELEMENTS ============
+const statusEl = document.getElementById('vizStatus');  // Status message
+const tooltip = document.getElementById('vizTooltip');  // Hover tooltip
+const fmtInt = d3.format(',d');  // Number formatter
 
 async function initCorrelations() {
   setStatus('Loading live data from QLever…');
@@ -172,9 +174,9 @@ function renderScatter(cfg, data) {
     .join('circle')
     .attr('cx', d => x(d.x))
     .attr('cy', d => y(d.y))
-    .attr('r', 5)
-    .attr('fill', '#74c0ff')
-    .attr('opacity', 0.9)
+    .attr('r', 5)  // Circle radius (change to increase dot size)
+    .attr('fill', '#74c0ff')  // Circle color (change to different color, e.g., '#ff6b6b' for red)
+    .attr('opacity', 0.9)  // Transparency (0 = invisible, 1 = opaque)
     .on('mouseenter', (event, d) => showTooltip(event, d, cfg, svg.node()))
     .on('mousemove', (event, d) => showTooltip(event, d, cfg, svg.node()))
     .on('mouseleave', hideTooltip);
@@ -184,8 +186,8 @@ function renderScatter(cfg, data) {
     .attr('y1', y(linePoints[0].y))
     .attr('x2', x(linePoints[1].x))
     .attr('y2', y(linePoints[1].y))
-    .attr('stroke', '#f6c177')
-    .attr('stroke-width', 2);
+    .attr('stroke', '#f6c177')  // Trend line color (change to different color)
+    .attr('stroke-width', 2);  // Trend line thickness
 
   writeStats(cfg.statsId, regression, filtered.length);
 }
