@@ -275,7 +275,7 @@ async function runSparqlGETWithRetry(query, { retries = 3, baseDelayMs = 400 } =
   }
 }
 
-// SPARQL QUERIES (NO COMMENTS AS REQUESTED)
+// SPARQL query that returns endemic species counts and threat categories per country
 const Q_END_EMD = `
 PREFIX wd:   <http://www.wikidata.org/entity/>
 PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
@@ -359,6 +359,7 @@ GROUP BY ?country
 ORDER BY DESC(?totalEndemicSpecies)
 `;
 
+// SPARQL query that returns the latest GDP value and year per country
 const Q_GDP = `
 PREFIX wd:   <http://www.wikidata.org/entity/>
 PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
@@ -398,6 +399,7 @@ GROUP BY ?country
 ORDER BY DESC(?gdpUSD)
 `;
 
+// SPARQL query that returns the latest population value and year per country
 const Q_POP = `
 PREFIX wd:   <http://www.wikidata.org/entity/>
 PREFIX wdt:  <http://www.wikidata.org/prop/direct/>
