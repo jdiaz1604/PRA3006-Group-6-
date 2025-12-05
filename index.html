@@ -1,33 +1,36 @@
-<!DOCTYPE html>                     <!-- HTML5 document type declaration -->
-<html lang="en">                    <!-- Root element, English language -->
-<head>                              <!-- Metadata container -->
-  <meta charset="utf-8" />          <!-- UTF-8 character encoding -->
-  <title>Endemic Species & Economy Explorer</title> <!-- Browser tab title -->
-  <meta name="viewport" content="width=device-width, initial-scale=1" /> <!-- Mobile responsive -->
-  <link rel="stylesheet" href="style.css" /> <!-- External CSS stylesheet -->
-</head>                             <!-- End metadata -->
-<body class="home">                 <!-- Visible content, homepage class -->
-  <header>                          <!-- Page header section -->
-    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1> <!-- Main heading -->
-    <nav>                           <!-- Navigation menu -->
-      <a href="index.html" class="active">Home</a> <!-- Current page link -->
-      <a href="map.html">Interactive map</a> <!-- Map page link -->
-      <a href="correlations.html">Correlations</a> <!-- Correlations page link -->
-      <a href="contact.html">Contact</a> <!-- Contact page link -->
-    </nav>                          <!-- End navigation -->
-  </header>                         <!-- End header -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Endemic Species & Economy Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="home">
+  <header>
+    <!-- Global header + nav: anchors the exam explanation of how visitors move between Home, Map, Correlations, and Contact. -->
+    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1>
+    <nav>
+      <a href="index.html" class="active">Home</a>
+      <a href="map.html">Interactive map</a>
+      <a href="correlations.html">Correlations</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
 
-  <main class="home-main">          <!-- Main content area -->
-    <section class="content-card">  <!-- Content section styled as card -->
-      <h3>About the project</h3>    <!-- Section heading level 3 -->
-      <p>                           <!-- Project description paragraph -->
-        We set out to test whether a country's socioeconomic profile (GDP and population size) correlates with the proportion of threatened endemic species. Our hypothesis: higher GDP and smaller population would mean a lower threatened/endemic proportion. After running linear regressions on Wikidata-sourced data, we did not find a significant correlation.
-      </p>                          <!-- End paragraph -->
+  <main class="home-main">
+    <section class="content-card">
+      <!-- Home content block: introduces the study, links to SPARQL sources, defines terms, and states limitations. -->
+      <h3>About the project</h3>
+      <p>
+        We set out to test whether a country’s socioeconomic profile (GDP and population size) correlates with the proportion of threatened endemic species. Our hypothesis: higher GDP and smaller population would mean a lower threatened/endemic proportion. After running linear regressions on Wikidata-sourced data, we did not find a significant correlation.
+      </p>
 
-      <h4>List of terms</h4>        <!-- Subheading level 4 -->
-      <p><strong>Endemic species:</strong> a native species found only in a single geographic location (e.g., Australian Koala, Chinese Giant Panda).</p> <!-- Term definition 1 -->
-      <p><strong>GDP (Gross Domestic Product):</strong> total market value of all final goods and services produced within a country; used here as a proxy for economic health.</p> <!-- Term definition 2 -->
-      <p><strong>Correlation graph:</strong> a visual tool to show the relationship between two variables (positive, negative, or none).</p> <!-- Term definition 3 -->
+      <h4>List of terms</h4>
+      <!-- Terminology section: keeps us aligned with the rubric’s required vocabulary. -->
+      <p><strong>Endemic species:</strong> a native species found only in a single geographic location (e.g., Australian Koala, Chinese Giant Panda).</p>
+      <p><strong>GDP (Gross Domestic Product):</strong> total market value of all final goods and services produced within a country; used here as a proxy for economic health.</p>
+      <p><strong>Correlation graph:</strong> a visual tool to show the relationship between two variables (positive, negative, or none).</p>
 
       <h4>What we did</h4>          <!-- Subheading -->
       <ul>                          <!-- Unordered list of activities -->

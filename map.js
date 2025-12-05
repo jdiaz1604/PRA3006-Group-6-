@@ -1,64 +1,64 @@
-// ============================================
-// INTERACTIVE WORLD MAP VISUALIZATION
-// Main JavaScript file for geographic data display
-// ============================================
+// ============ API & DATA ENDPOINTS ============
+const QLEVER = 'https://qlever.dev/api/wikidata';  // QLever endpoint for SPARQL queries
+const ACCEPT_JSON = { 'Accept': 'application/sparql-results+json' };  // Header to request JSON responses from SPARQL
+const worldUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';  // World map in TopoJSON format
 
-// Application Programme Interface adress for Wikidata queries using SPARQL
-const QLEVER = 'https://qlever.dev/api/wikidata';
+// ============ D3 FORMATTERS ============
+// These format numbers for display (e.g., 1000000 → "1,000,000")
+const fmtInt = d3.format(',d');  // Integer formatter with commas
+const fmtMoney = d3.format('~s');  // Abbreviated formatter (e.g., "1.2M")
 
-// HTTP header to request JSON format responses, specifically designed for SPARQL results
-const ACCEPT_JSON = { 'Accept': 'application/sparql-results+json' };
+// ============ DOM ELEMENT REFERENCES ============
+// Cache DOM elements for performance (avoid repeated getElementById calls)
+const $loading = document.getElementById('loading');  // Spinner overlay
+const $tooltip = document.getElementById('tooltip');  // Hover tooltip (country/continent name)
+const panelModeEl = document.getElementById('panelMode');  // Text showing "Continent overview" or "Country profile"
+const dataContextEl = document.getElementById('dataContext');  // Explanatory text below panel title
+const backBtn = document.getElementById('backToWorld');  // "Back to continents" button
 
-// URL for world geographic data (TopoJSON format)
-const worldUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+// ============ DATA CACHES ============
+// These Maps store fetched SPARQL data. Lazy-loaded on first interaction.
+// Key = ISO numeric code (e.g., 840 for USA), Value = { countryLabel, endemic count, threatened counts, etc. }
+let endemicTable = null;  // Endemic & threatened species data by country
+let gdpTable = null;  // GDP data by country
+let populationTable = null;  // Population data by country
+let preloadError = null;  // Stores error if SPARQL fetch fails, so we don't retry
 
-// Number formatters from D3.js library
-const fmtInt = d3.format(',d');      // Formats with commas: 1000000 -> "1,000,000"
-const fmtMoney = d3.format('~s');    // Formats with SI prefixes: 1000000 -> "1M"
-// HTML element references (HTML elements js will interact with)
-const $loading = document.getElementById('loading');        // Loading spinner
-const $tooltip = document.getElementById('tooltip');        // Hover tooltip
-const panelModeEl = document.getElementById('panelMode');   // Panel mode display
-const dataContextEl = document.getElementById('dataContext'); // Context information
-const backBtn = document.getElementById('backToWorld');     // Back button
-const startBtn = document.getElementById('startExploring'); // Start button
+// ============ GEOGRAPHIC DATA ============
+// Populated when world map loads
+let worldTopo = null;  // TopoJSON topology (raw map data from CDN)
+let countries = [];  // Array of country features extracted from TopoJSON
+let continents = [];  // Array of continent features (merged from countries)
 
-// Data storage variables (initially empty, will be filled from Wikdidata)
-let endemicTable = null;      // Stores endemic species data per country
-let gdpTable = null;          // Stores GDP (Gross Domestic Product) data
-let populationTable = null;   // Stores population data
-let preloadError = null;      // Stores any loading errors
+// ============ LOOKUP TABLES FOR FAST QUERYING ============
+const continentByCountryId = new Map();  // Maps country ID → continent name (e.g., 840 → "North America")
+const countriesByContinent = new Map();  // Maps continent name → array of country features (for aggregation)
 
-// Geographic data storage
-let worldTopo = null;         // Raw topographic data
-let countries = [];           // Country features extracted from worldTopo
-let continents = [];          // Continent features (created by grouping countries)
-
-// Data structures for quick lookups
-const continentByCountryId = new Map();    // country ID → continent name
-const countriesByContinent = new Map();    // continent name → array of country features
-
-// Application state - tracks what user is currently viewing( like a memory of what user is looking at)
+// ============ APPLICATION STATE ============
+// This object tracks what the user is currently viewing. When user clicks a continent/country,
+// these values change, which triggers D3 styling updates and panel refreshes.
 const state = {
-  continentName: null,   // Currently selected continent (null = world view)
-  countryId: null        // Currently selected country ID (null = continent/world view)
+  continentName: null,  // Which continent is selected? null = none (showing world overview)
+  countryId: null  // Which country is selected? null = none (showing continent view)
 };
 
-// Map visualization variables (D3.js related ( Data-Driven Documents)library for visualizations)
-let projection = null;        // Geographic projection (converts lat/long to screen coordinates)
-let path = null;             // Path generator for SVG(Scalable Vector graphics) drawing
-let rootLayer = null;        // Main SVG group that contains all map elements
-let sphereLayer = null;      // Background sphere/globe layer ( ocean layer)
-let continentLayer = null;   // Continent shapes layer
-let countryLayer = null;     // Country shapes layer
-let borderLayer = null;      // Country borders layer
-let zoomBehavior = null;     // Zoom and pan behavior controller
-let currentTransform = d3.zoomIdentity;  // Current zoom/pan transformation ( initially zoomed out)
-let resizeTimer = null;      // Timer that stops the map from resizing too often
-let inFlight = false;        // Flag to prevent multiple simultaneous requests( avoid double clicks while loading)
+// ============ D3 RENDERING STATE ============
+// These control how the map is drawn and transformed on screen
+let projection = null;  // Geographic projection (converts lat/lon to x/y pixels)
+let path = null;  // Path generator (converts geographic features to SVG path strings)
+let rootLayer = null;  // Root <g> group that holds all map elements
+let sphereLayer = null;  // Blue ocean background
+let continentLayer = null;  // <g> for continent borders/selection
+let countryLayer = null;  // <g> for individual country shapes
+let borderLayer = null;  // <path> for country borders/edges
+let zoomBehavior = null;  // D3 zoom handler for pan/zoom interactions
+let currentTransform = d3.zoomIdentity;  // Current zoom/pan state (identity = no transform)
+let resizeTimer = null;  // Timeout ID for debounced resize handler
+let inFlight = false;  // Flag to prevent multiple simultaneous API requests (mutual exclusion)
 
-// Defines the variable svg as being the canvas of the map 
-const svg = d3.select('.map');
+// ============ SVG & DOM CONTAINERS ============
+const svg = d3.select('.map');  // Main SVG element where map is drawn
+const mapWrap = document.querySelector('.map-wrap');  // Container div (for measuring width/height)
 
 // ============================================
 // INITIALIZATION FUNCTIONS
@@ -66,41 +66,35 @@ const svg = d3.select('.map');
 
 // Sets up button used by the user to interact with the map If the start button exists, attach a listener that, when clicked, finds the 'explorer' element and smoothly scrolls it into view.)
 function setupButtons() {
-
-  // Back to continents button
   backBtn?.addEventListener('click', () => { resetToContinents(); });
 }
 
-// Calculates and returns map container dimensions
-function resize() {//This function's job is to calculate dimensions 
-  const mapWrap = document.querySelector('.map-wrap');//Searches the HTML DOM (Document Object Model) - the actual webpage structure for an element with the class name 'map-wrap' and assigns it to the variable mapWrap.
-  const w = mapWrap?.clientWidth || 800;// Calculates the width of the map container. If mapWrap exists, it uses its clientWidth property; otherwise, it defaults to 800 pixels. Gets from the browser the width of the map container element. If that element is not found, it defaults to 800 pixels.
-  const h = mapWrap?.clientHeight || Math.max(500, window.innerHeight * 0.7);// Calculates the height of the map container. If mapWrap exists, it uses its clientHeight property otherwise, it defaults to the greater of 500 pixels or 70% of the window's inner height. Gets from the browser the height of the map container element. If that element is not found, it defaults to the greater of 500 pixels or 70% of the browser window's height.
+// ============ RESPONSIVE SIZING ============
+// Calculate SVG dimensions based on available screen space
+function resize() {
+  const w = mapWrap.clientWidth || 800;  // Use container width, fallback to 800
+  const h = Math.max(460, window.innerHeight - 220);  // Min 460px height, leave room for header/panel
   return { w, h };
 }
 
-// Loads geographic data from external source ( coordinate of borders of countries)
+// ============ LOAD & PROCESS GEOGRAPHIC DATA ============
+// Fetches world map from CDN and assigns countries to continents
 async function loadGeoData() {
-  try {// Try to execute the following code block
-    // Fetch world topographic data
-    worldTopo = await d3.json(worldUrl);// Variable that stores the downloaded world map JSON data
-    
-    // Convert TopoJSON to GeoJSON features (countries)
-    countries = topojson.feature(worldTopo, worldTopo.objects.countries).features;// Converts the TopoJSON data into GeoJSON format, specifically extracting the country features and storing them in the countries variable.
-    
-    // Group countries into continents
-    assignContinents();
-  } catch (error) {// If an error occurs during the try block, execute this code block
-    console.error('Failed to load geo data:', error);
-    throw error;
-  }
+  // Fetch TopoJSON from CDN (compressed geographic format, much smaller than GeoJSON)
+  worldTopo = await d3.json(worldUrl);
+  
+  // Convert TopoJSON topology to GeoJSON features (each feature = one country)
+  // topojson.feature() "unrolls" the compressed TopoJSON into usable GeoJSON
+  countries = topojson.feature(worldTopo, worldTopo.objects.countries).features;
+  
+  // Use geographic coordinates to determine which continent each country belongs to
+  // Populates continentByCountryId and countriesByContinent Maps
+  assignContinents();
 }
 
-// ============================================
-// CONTINENT AND BIOME ASSIGNMENT
-// ============================================
-
-//Manually assigns specific countries to continents based on their names, overriding any automatic geographic calculations. Because some countries are geographically located in one continent but are politically or culturally associated with another.
+// ============ CONTINENT ASSIGNMENT LOGIC ============
+// Hard-coded overrides for edge cases (countries on continent borders, disputed territories)
+// These are applied BEFORE geographic centroid checking to guarantee correct continent
 const NAME_OVERRIDES = new Map([
   ['Türkiye', 'Europe'], ['Turkey', 'Europe'], ['Cyprus', 'Europe'], ['Georgia', 'Europe'],
   ['Kazakhstan', 'Asia'], ['Azerbaijan', 'Asia'], ['Armenia', 'Asia'], ['Egypt', 'Africa'],
@@ -123,9 +117,10 @@ const NAME_OVERRIDES = new Map([
   ['Indonesia', 'Asia'], ['Philippines', 'Asia'], ['Japan', 'Asia'], ['Sri Lanka', 'Asia'],
   ['French Southern Territories', 'Antarctica']
 ]);
-
-// Returns 3-letter ISO code for a country (used for data lookup)
-function getCountryISO3(country) {//This function's job is to return the 3-letter International Organization for Standardization code for a given country. the code is meant to get the country code used in wikidata to get data about the country.
+// ============ COUNTRY-TO-ISO3 MAPPING ============
+// Maps country names from TopoJSON to ISO 3166-1 alpha-3 codes (used in biome detection)
+// Only includes countries that need special mapping; others are looked up dynamically
+function getCountryISO3(country) {
   const countryName = country.properties?.name;
   const isoMap = {
     'Russia': 'RUS', 'United States': 'USA', 'Canada': 'CAN', 'China': 'CHN', 'Australia': 'AUS',
@@ -197,18 +192,20 @@ function getCountryISO3(country) {//This function's job is to return the 3-lette
   return isoMap[countryName] || '';// Return the corresponding ISO code or an empty string if not found
 }
 
-// Determines biome type for a country (used for visual styling)
+// ============ BIOME DETECTION ============
+// Determines which biome color to apply to each country based on name/geography
+// Biomes are displayed in map legend and styled with different colors
 function getCountryBiome(country) {
   const countryName = country.properties?.name;//Looks at the country's properties list, finds the one called 'name' and tells what name it has to encode for the variable.
   const continent = continentByCountryId.get(country.id);//Looks up which continent the country belongs to using its unique identifier (ID) and stores that continent name in the variable continent.( this is used later if the country is not found in any specific biome list)
   
-  // Special hardcoded cases
+  // Extreme biomes that override everything (highest priority)
   if (countryName === 'Greenland') return 'ice';
   if (countryName === 'Antarctica') return 'ice';
   if (countryName === 'Iceland') return 'tundra';
   
-  // Desert biome countries
-  const desertCountries = ['Saudi Arabia', 'Egypt', 'Libya', 'Algeria', 'Australia', 'United Arab Emirates', //defines all the countries that belong to a desert biome
+  // Check specific biome lists in order of priority (most specific first)
+  const desertCountries = ['Saudi Arabia', 'Egypt', 'Libya', 'Algeria', 'Australia', 'United Arab Emirates', 
                           'Oman', 'Yemen', 'Kuwait', 'Qatar', 'Bahrain', 'Mauritania', 'Niger', 'Chad', 
                           'Sudan', 'Mali', 'Western Sahara', 'Jordan', 'Israel', 'Iraq', 'Iran', 'Pakistan',
                           'Afghanistan', 'Turkmenistan', 'Uzbekistan', 'Kazakhstan', 'Mongolia'];
@@ -250,7 +247,8 @@ function getCountryBiome(country) {
                           'Switzerland', 'Chile', 'New Zealand'];
   if (forestCountries.includes(countryName)) return 'forest';
   
-  // Assign biome based on continent in case a country is not listed above
+  // Continent-based fallbacks (lowest priority; used if country not in specific lists)
+  // These provide reasonable defaults if a country wasn't explicitly categorized
   if (continent === 'Europe') return 'forest';
   if (continent === 'North America') return 'forest';
   if (continent === 'Asia') return 'forest';
@@ -258,75 +256,71 @@ function getCountryBiome(country) {
   if (continent === 'South America') return 'rainforest';
   if (continent === 'Oceania') return 'desert';
   if (continent === 'Antarctica') return 'ice';
+  
+  // Ultimate fallback
+  return 'forest';
 }
-
-// Groups countries into continents and creates continent features
-function assignContinents() {//This function's job is to group countries into their respective continents and create continent features by merging country boundaries. 
-  // Clear previous data
-  continentByCountryId.clear();// Empties the map that links country IDs to continent names, preparing it for fresh assignments.
-  countriesByContinent.clear();// Empties the map that links continent names to arrays of country features, preparing it for fresh assignments.
+// ============ ASSIGN COUNTRIES TO CONTINENTS ============
+// Called once at startup. Groups countries by continent for aggregation and queries.
+// Creates two Maps: (1) country ID → continent, (2) continent → array of countries
+function assignContinents() {
+  continentByCountryId.clear();  // Reset maps
+  countriesByContinent.clear();
   
-  const buckets = new Map(); // Initializing a temporary storage for continent geometries
-  const geometries = worldTopo?.objects?.countries?.geometries || [];// Extracts the geometries of countries from the TopoJSON(worldmap) data or initializes an empty array if not available.
+  const buckets = new Map();  // Temp storage: continent → array of TopoJSON geometries
+  const geometries = worldTopo?.objects?.countries?.geometries || [];
   
-  // Process each country
-  countries.forEach((feature, index) => {// Loops through ALL countries, feature = Current country object, index = Position in array (0, 1, 2, ...)
-    const continent = inferContinent(feature) || 'Unassigned';// Determines the continent for the current country using the inferContinent function. If no continent is found, it defaults to 'Unassigned'.
+  // For each country, determine its continent and add to lookup tables
+  countries.forEach((feature, index) => {
+    const continent = inferContinent(feature) || 'Unassigned';  // Infer continent from lat/lon
+    feature.properties = feature.properties || {};
+    feature.properties.continent = continent;  // Attach continent to feature for later use
+    continentByCountryId.set(feature.id, continent);  // Fast lookup: country ID → continent
     
-    // Store continent information with the country
-    feature.properties = feature.properties || {};// Ensures the country has a properties object to store additional information.
-    feature.properties.continent = continent;// Adds continent to the country's own properties
-    continentByCountryId.set(feature.id, continent);// Maps the country ID to its continent for quick lookup later.
+    if (continent === 'Unassigned') return;  // Skip unassigned countries
     
-    // Skip unassigned countries
-    if (continent === 'Unassigned') return;
+    // Add country to its continent's list
+    if (!countriesByContinent.has(continent)) countriesByContinent.set(continent, []);
+    countriesByContinent.get(continent).push(feature);
     
-    // Add country to continent's list
-    if (!countriesByContinent.has(continent)) countriesByContinent.set(continent, []);// Check: "Does this continent already have a list?" If not, create an empty list(array) for it.
-    countriesByContinent.get(continent).push(feature);//Get the continent's country list and Add the current country to the continent's list.
-    
-    //Collects country shapes grouped by continent so they can later be merged into continent shapes.
-    if (!buckets.has(continent)) buckets.set(continent, []);//Make sure this continent has an empty array in buckets if not create empty array
-    const geom = geometries[index];// Get the geometry for the current country using its index in the array.
-    if (geom) buckets.get(continent).push(geom);// If the geometry exists, add it to the continent's list in buckets.
+    // Also track geometries so we can merge them later
+    if (!buckets.has(continent)) buckets.set(continent, []);
+    const geom = geometries[index];
+    if (geom) buckets.get(continent).push(geom);
   });
 
-  // Create continent features by merging country boundaries
-  continents = Array.from(buckets.entries())// Convert buckets Map to array of [continentName, arrayOfCountryShapes] pairs
-    .filter(([name]) => name && name !== 'Unassigned')// Exclude any unassigned continents Keeps only entries where: name exists (not null/undefined/empty) and name is not unassigned
-    .map(([name, geoms]) => ({// Transforms each [continentName, geometryArray of each country] pair into a continent feature
-      type: 'Feature',// Specifies that this object is a GeoJSON Feature (standard format for geographic data)
-      properties: { name },// Sets the continent name in properties
-      geometry: topojson.merge(worldTopo, geoms) // Merge shapes to get the actual continent shape
+  // Merge each continent's country geometries into a single continent polygon
+  continents = Array.from(buckets.entries())
+    .filter(([name]) => name && name !== 'Unassigned')
+    .map(([name, geoms]) => ({
+      type: 'Feature',
+      properties: { name },
+      // topojson.merge() combines multiple geometries into one (used for continent boundaries)
+      geometry: topojson.merge(worldTopo, geoms)
     }));
 }
 
-// Infers continent based on geographic coordinates (fallback method if Manual Assignments fail)
+// ============ INFER CONTINENT FROM COORDINATES ============
+// Uses geographic centroid (center point) + hardcoded NAME_OVERRIDES to determine continent
+// This runs after NAME_OVERRIDES are checked, so edge cases are already handled
 function inferContinent(feature) {
   // Get the country name from feature properties (if it exists)
   const name = feature?.properties?.name;
   
-  // Check manual overrides first - if country is in our override list, use that
+  // Step 1: Check hard-coded overrides first (highest priority)
   if (NAME_OVERRIDES.has(name)) return NAME_OVERRIDES.get(name);
-  // Example: NAME_OVERRIDES has ['Turkey', 'Europe'] → Turkey returns 'Europe'
   
-  // Calculate geographic center - find the central point of the country
+  // Step 2: Get geographic center (centroid) of the country
   const [lon, lat] = d3.geoCentroid(feature);
-  // lon = longitude (east-west position: -180 to 180)
-  // lat = latitude (north-south position: -90 to 90)
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return 'Unassigned';  // Handle invalid coords
   
-  // Return if invalid coordinates - safety check for corrupted data
-  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return 'Unassigned';
-  
-  // Geographic rules for continent assignment
-  
-  // Rule 1: Very far south → Antarctica
+  // Step 3: Use coordinate ranges to determine continent
+  // These ranges are approximate but work well for most countries
   if (lat <= -50) return 'Antarctica';
   
   // Rule 2: Western hemisphere → North or South America
   if (lon < -30) {
-    // North of 15°N → North America, South → South America
-    return lat >= 15 ? 'North America' : 'South America';
+    return lat >= 15 ? 'North America' : 'South America';  // Divide Americas by latitude
   }
   
   // Rule 3: Europe zone (specific longitude/latitude box)
@@ -344,300 +338,307 @@ function inferContinent(feature) {
   
   // Rule 7: Northern hemisphere default → Europe
   if (lat >= 0) return 'Europe';
-  
-  // Final fallback: Everything else → Africa
-  return 'Africa';
+  return 'Africa';  // Default fallback
 }
 // ============================================
 // MAP RENDERING FUNCTIONS
 // ============================================
 
-// Initializes Scalable Vector Graphics layers for the map
+// ============ INITIALIZE D3 LAYERS ============
+// Creates SVG layer hierarchy and zoom behavior handler
+// Layer structure:
+//   svg
+//   └─ rootLayer (g) - holds all map content, gets transformed by zoom/pan
+//      ├─ sphereLayer (path) - blue ocean background
+//      ├─ continentLayer (g) - continent boundaries, responds to clicks
+//      ├─ countryLayer (g) - individual countries, responds to clicks
+//      └─ borderLayer (path) - country borders/edges
 function initMapLayers() {
-  // Clear any existing map
-  svg.selectAll('*').remove();
+  svg.selectAll('*').remove();  // Clear any existing content
   
-  // Create main group that will be transformed (zoomed/panned)
-  rootLayer = svg.append('g').attr('class', 'map-root');// Creates a new group element within the SVG canvas and assigns it to the variable rootLayer. This group will contain all the map elements and will be the target for zooming and panning transformations. Attribute HTML class to map root
+  // Create root group that will be transformed for zoom/pan
+  rootLayer = svg.append('g').attr('class', 'map-root');
   
-  // Create layers in drawing order (back to front)
-  sphereLayer = rootLayer.append('path').attr('class', 'sphere'); // Background
-  continentLayer = rootLayer.append('g').attr('class', 'continents-layer');//creates a new group g which is a child element of rootlayer, then it sets class attribute to that new g group then it stores it as a reference in continentlayer. For drawing continents
-  countryLayer = rootLayer.append('g').attr('class', 'countries-layer');// For drawing countries
-  borderLayer = rootLayer.append('path')// Country borders
-    .attr('fill', 'none')// No fill color for borders
-    .attr('stroke', '#0f1738')//Country borders color
-    .attr('stroke-width', 0.6);// Country borders thickness
+  // Ocean background (blue sphere from CSS)
+  sphereLayer = rootLayer.append('path').attr('class', 'sphere');
   
-  // Set up zoom and pan behavior
-  zoomBehavior = d3.zoom()//Function call that creates and returns a zoom behavior object
-    .scaleExtent([1, 8]) // Limit zoom between 1x and 8x
-    .on('zoom', (event) => {// registers an event listener/handler that will run every time the user zooms or pans the map.
-      currentTransform = event.transform;// Update current zoomed state
-      rootLayer.attr('transform', currentTransform);// Apply transformation to root layer
+  // Continent layer (clickable, highlighted on selection)
+  continentLayer = rootLayer.append('g').attr('class', 'continents-layer');
+  
+  // Country layer (only visible after selecting a continent)
+  countryLayer = rootLayer.append('g').attr('class', 'countries-layer');
+  
+  // Country borders (lines between countries, no fill)
+  borderLayer = rootLayer.append('path')
+    .attr('fill', 'none')
+    .attr('stroke', '#0f1738')
+    .attr('stroke-width', 0.6);
+  
+  // Zoom behavior: lets users pan and zoom the map (scale 1x to 8x)
+  // When zoom changes, rootLayer gets transformed to show the new view
+  zoomBehavior = d3.zoom()
+    .scaleExtent([1, 8])  // Min zoom = 1x, max zoom = 8x
+    .on('zoom', (event) => {
+      currentTransform = event.transform;  // Save current transform state
+      rootLayer.attr('transform', currentTransform);  // Apply transform to all layers
     });
   
-  // Apply zoom behavior to SVG in HTML
-  svg.call(zoomBehavior);
+  svg.call(zoomBehavior);  // Attach zoom behavior to SVG
 }
 
-// This function draws/redraws the entire map
+// ============ RENDER MAP ============
+// Main D3 rendering function: draws continents and countries based on current state
+// Called on page load and whenever screen is resized
 function renderMap() {
-  // Don't render if no data
-  if (!countries.length || !continents.length) return;// If there are no countries or continents data, exit the function early.
+  if (!countries.length || !continents.length) return;  // Safety check
   
-  // Get container dimensions
-  const { w, h } = resize();// Calls the resize function to get the current width (w) and height (h) of the map container.
-  
-  // Apply the calculated dimensions (w, h) as width/height attributes in the svg
+  // Step 1: Calculate new dimensions and update SVG
+  const { w, h } = resize();
   svg.attr('width', w).attr('height', h);
   
-  // Create Mercator projection that fits container
-  projection = d3.geoMercator().fitExtent([[20, 20], [w - 20, h - 20]], { type: 'Sphere' });// Sets up a Mercator projection that fits within the specified width and height, with a 20-pixel margin on all sides.
-  path = d3.geoPath(projection); // Create path generator using the projection
+  // Step 2: Create geographic projection (Mercator: converts lat/lon to x/y pixels)
+  projection = d3.geoMercator().fitExtent([[10, 10], [w - 10, h - 10]], { type: 'Sphere' });
   
-  // Draw background sphere (ocean)
-  sphereLayer.attr('d', path({ type: 'Sphere' }));//Sets the "d" (path data) attribute of the sphereLayer element to the SVG drawing commands generated by projecting a sphere.
+  // Step 3: Create path generator (converts GeoJSON to SVG path strings)
+  path = d3.geoPath(projection);
+
+  // Step 4: Draw ocean background
+  sphereLayer.attr('d', path({ type: 'Sphere' }));
+
+  // Step 5: BIND & RENDER CONTINENTS
+  // D3 join pattern: enter (new data) + update (existing) + exit (removed)
+  continentLayer.selectAll('path')
+  .data(continents, d => d.properties?.name || d.id)  // Key by continent name
+  .join(
+    enter => enter.append('path')
+      .attr('class', 'continent')
+      .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '')
+      .attr('d', path)
+      .on('mousemove', handleMouseMove)
+      .on('mouseleave', handleMouseLeave)
+      .on('click', (event, d) => { event.stopPropagation(); handleContinentClick(d); }),
+    update => update
+      .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '')
+      .attr('d', path),
+    exit => exit.remove()
+  );
+
+  // Step 6: BIND & RENDER COUNTRIES
+  countryLayer.selectAll('path')
+  .data(countries, d => d.id)  // Key by country ID
+  .join(
+    enter => enter.append('path')
+      .attr('class', 'country')
+      .attr('data-country', d => getCountryISO3(d))
+      .attr('data-biome', d => getCountryBiome(d))  // Biome affects CSS styling/color
+      .attr('d', path)
+      .on('mousemove', handleMouseMove)
+      .on('mouseleave', handleMouseLeave)
+      .on('click', (event, d) => { event.stopPropagation(); handleCountryClick(d); }),
+    update => update
+      .attr('data-country', d => getCountryISO3(d))
+      .attr('data-biome', d => getCountryBiome(d))
+      .attr('d', path),
+    exit => exit.remove()
+  );
   
-  // Draw continents using D3 data join pattern
-  continentLayer.selectAll('path')// Selects all existing path elements within the continentLayer group
-    .data(continents, d => d.properties?.name || d.id)// Binds the continents data to the selected path elements, using the continent name or ID as the key for data binding.
-    .join(// Joins the data to the DOM elements, handling enter, update and exit selections
-     enter => enter.append('path')// For new continents, append a path element
-        .attr('class', 'continent')// Sets the class attribute to 'continent'
-        .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '')// Sets a data attribute for continent name in lowercase with spaces replaced by hyphens
-        .attr('d', path)// Sets the "d" attribute to define the shape of the continent using the path generator
-        .on('mousemove', handleMouseMove)// Attach mousemove event for tooltip - .on It attaches event listeners to DOM elements it makes elements respond to user interactions.
-        .on('mouseleave', handleMouseLeave)// Attach mouseleave event to hide tooltip
-        .on('click', (event, d) => { // Attach click event to handle continent selection
-          event.stopPropagation(); // Prevent event bubbling
-          handleContinentClick(d); // Call continent click handler
-        }),
-      update => update// For existing continents, update attributes
-        .attr('data-continent', d => d.properties?.name?.toLowerCase().replace(' ', '-') || '')// Update data attribute
-        .attr('d', path),// Update shape 
-      exit => exit.remove()// Remove continents that are no longer in the data
-    );
+  // Step 7: Draw country borders (topojson.mesh extracts border lines from countries)
+  const mesh = topojson.mesh(worldTopo, worldTopo.objects.countries, (a, b) => a !== b);
+  borderLayer.attr('d', path(mesh));
+
+  // Step 8: Apply zoom/pan transform to all layers
+  rootLayer.attr('transform', currentTransform);
+  svg.call(zoomBehavior.transform, currentTransform);
   
-  // Draw countries
-  countryLayer.selectAll('path')// Selects all existing path elements within the countryLayer group
-    .data(countries, d => d.id)// Binds the countries data to the selected path elements, using the country ID as the key for data binding.
-    .join(// Joins the data to the DOM elements, handling enter, update and exit selections
-      enter => enter.append('path')// For new countries, append a path element
-        .attr('class', 'country')// Sets the class attribute to 'country'
-        .attr('data-country', d => getCountryISO3(d))// Sets a data attribute for country ISO3 code
-        .attr('data-biome', d => getCountryBiome(d))// Sets a data attribute for country biome type
-        .attr('d', path)// Sets the "d" attribute to define the shape of the country using the path generator
-        .on('mousemove', handleMouseMove)// Attach mousemove event for tooltip
-        .on('mouseleave', handleMouseLeave)// Attach mouseleave event to hide tooltip
-        .on('click', (event, d) => { // Attach click event to handle country selection
-          event.stopPropagation(); // Prevent event bubbling
-          handleCountryClick(d); // Call country click handler
-        }),
-      update => update// For existing countries, update attributes
-        .attr('data-country', d => getCountryISO3(d))// Update data attribute
-        .attr('data-biome', d => getCountryBiome(d))// Update biome attribute
-        .attr('d', path),// Update shape
-      exit => exit.remove()// Remove countries that are no longer in the data
-    );
-  
-  // Draw country borders
-  const mesh = topojson.mesh(worldTopo, worldTopo.objects.countries, (a, b) => a !== b);// Creates a mesh of country borders by extracting shared boundaries between different countries from the TopoJSON data.
-  borderLayer.attr('d', path(mesh));// Sets the "d" attribute of the borderLayer to draw borders between countries using the mesh function to extract shared boundaries.
-  
-  // Apply current zoom/pan
-  rootLayer.attr('transform', currentTransform);// Apply current zoom/pan transform to root layer
-  svg.call(zoomBehavior.transform, currentTransform);// Sync zoom behavior with current transform
-  
-  // Update visual states
-  updateContinentLayerState();// Ensure continent layer reflects current state
-  updateCountryLayerState();// Ensure country layer reflects current state
+  // Step 9: Update styling based on current state (selected continent/country)
+  updateContinentLayerState();
+  updateCountryLayerState();
 }
 
-// ============================================
-// INTERACTION HANDLERS
-// ============================================
-
-// Shows tooltip on mouse hover
-function handleMouseMove(event, feature) {// event = Mouse event object, feature = GeoJSON feature being hovered over
-  const props = feature?.properties || {};// Get feature properties or empty object
-  const name = props.name || props.admin || props.sovereignt || props.brk_name || `ISO ${feature?.id}`;// Determine name to display in tooltip
+// ============ MOUSE INTERACTIONS ============
+// Show tooltip with country/continent name on hover
+function handleMouseMove(event, feature) {
+  const props = feature?.properties || {};
+  // Try multiple name fields to find a label
+  const name = props.name || props.admin || props.sovereignt || props.brk_name || `ISO ${feature?.id}`;
   
-  // Position and show tooltip
-  $tooltip.style.opacity = 1;//opacity 1 means fully visible, it is a purcentage [0.0 - 1.0]
-  $tooltip.style.left = (event.offsetX + 14) + 'px';// Position tooltip slightly offset from cursor
-  $tooltip.style.top = (event.offsetY + 14) + 'px';// Position tooltip slightly offset from cursor
-  $tooltip.textContent = name;// Set tooltip text to feature name
+  // Position tooltip near cursor
+  $tooltip.style.opacity = 1;
+  $tooltip.style.left = (event.offsetX + 14) + 'px';
+  $tooltip.style.top = (event.offsetY + 14) + 'px';
+  $tooltip.textContent = name;
   
-  // Style differently for continents vs countries
-  if (feature.geometry && feature.geometry.type === 'MultiPolygon' ||// Check if feature is a continent (MultiPolygon) 
-      feature.properties?.name && continents.some(c => c.properties?.name === feature.properties?.name)) {// Or if its name matches a known continent
-    // Continent styling - use CSS class
-    $tooltip.className = 'tooltip tooltip-continent';// Set tooltip class for continent
-  } else {// Otherwise, it's a country
-    // Country styling - use CSS class
-    $tooltip.className = 'tooltip tooltip-country';// Set tooltip class for country
+  // Style tooltip differently for continents vs. countries
+  if (feature.geometry && feature.geometry.type === 'MultiPolygon' || 
+      feature.properties?.name && continents.some(c => c.properties?.name === feature.properties?.name)) {
+    // Continent: green highlight
+    $tooltip.style.background = 'var(--accent)';
+    $tooltip.style.color = 'var(--bg)';
+    $tooltip.style.fontWeight = '600';
+    $tooltip.style.borderColor = 'var(--accent-strong)';
+  } else {
+    // Country: default gray
+    $tooltip.style.background = '#0e1530';
+    $tooltip.style.color = 'var(--ink)';
+    $tooltip.style.fontWeight = 'normal';
+    $tooltip.style.borderColor = '#1f2a50';
   }
 }
 
-function handleMouseLeave() {// Hides tooltip on mouse leave
-  $tooltip.style.opacity = 0;// Set tooltip opacity to 0 (invisible) when mouse leaves
-  // Optional: Reset class when hidden
-  $tooltip.className = 'tooltip';// Reset tooltip class to default
+// Hide tooltip when mouse leaves
+function handleMouseLeave() {
+  $tooltip.style.opacity = 0;
+  $tooltip.style.background = '#0e1530';
+  $tooltip.style.color = 'var(--ink)';
+  $tooltip.style.fontWeight = 'normal';
+  $tooltip.style.borderColor = '#1f2a50';
 }
-
-// Hides tooltip
-function handleMouseLeave() {// Hides tooltip on mouse leave
-  $tooltip.style.opacity = 0;// Set tooltip opacity to 0 (invisible) when mouse leaves
-}
-
-// Handles continent click - shows continent-level data
-async function handleContinentClick(feature) {// feature = GeoJSON feature of clicked continent
-  if (!feature || inFlight) return;// Ignore if no feature or request already in flight
-  inFlight = true;// Mark request as in flight
-  showLoading(true);// Show loading indicator
+// ============ CONTINENT CLICK HANDLER ============
+// User clicked a continent: fetch data, zoom to it, and show aggregated stats
+async function handleContinentClick(feature) {
+  if (!feature || inFlight) return;  // Prevent double-clicks
   
-  const contName = feature.properties?.name || 'Selected continent';// Get continent name or default
+  inFlight = true;  // Lock: prevent other API calls until this completes
+  showLoading(true);  // Show spinner
   
-  // Update UI
-  setPanelMode('Continent overview');// Set side panel to continent overview mode
-  setTitle(contName);// Update title to continent name
-  dataContextEl.textContent = 'Aggregating continent-wide data...';// Update context message
-  toggleBackButton(true);// Show back button
+  const contName = feature.properties?.name || 'Selected continent';
+  setPanelMode('Continent overview');
+  setTitle(contName);
+  dataContextEl.textContent = 'Aggregating continent-wide data...';
+  toggleBackButton(true);
   
-  try {// Try-catch block for error handling
-    // Ensure data is loaded
-    await ensureDataReady();// Wait for data to be ready
-    if (preloadError) throw preloadError;// Throw error if preload failed
+  try {
+    // Step 1: Fetch SPARQL data (endemic, GDP, population)
+    // If already cached, ensureDataReady() returns immediately
+    await ensureDataReady();
+    if (preloadError) throw preloadError;
     
-    // Update state
-    state.continentName = contName;// Set selected continent in state
-    state.countryId = null;// Clear selected country
+    // Step 2: Update application state
+    state.continentName = contName;
+    state.countryId = null;
     
-    // Calculate summary
-    const summary = summarizeContinent(contName);// Summarize continent data
+    // Step 3: Compute continent-wide aggregates from cached tables
+    const summary = summarizeContinent(contName);
     
-    // Update visualization
-    updateContinentLayerState();// Update continent layer visual state
-    updateCountryLayerState();// Update country layer visual state
-    zoomToFeature(feature);// Zoom map to continent
+    // Step 4: Update D3 layers (highlight continent, fade others, show countries in region)
+    updateContinentLayerState();
+    updateCountryLayerState();
     
-    // Display summary
-    applyContinentSummary(summary, contName);// Show continent summary in side panel
-  } catch (err) {// Handle errors
-    console.error(err);// Log error to console
-    setAllStatuses('Request failed: unexpected error.');// Update status message  
-    dataContextEl.textContent = 'Unable to load continent aggregates right now.';// Update context message
-  } finally {// Always execute cleanup
-    showLoading(false);// Hide loading indicator  
-    inFlight = false;// Mark request as complete
+    // Step 5: Animate zoom to the selected continent
+    zoomToFeature(feature);
+    
+    // Step 6: Display the aggregated data in the sidebar
+    applyContinentSummary(summary, contName);
+  } catch (err) {
+    console.error(err);
+    setAllStatuses('Request failed: unexpected error.');
+    dataContextEl.textContent = 'Unable to load continent aggregates right now.';
+  } finally {
+    showLoading(false);  // Hide spinner
+    inFlight = false;  // Unlock: allow new API calls
   }
 }
 
-// Handles country click - shows country-level data
-async function handleCountryClick(feature) {// feature = GeoJSON feature of clicked country
-  if (!feature || !state.continentName || inFlight) return;// Ignore if no feature, no continent selected, or request already in flight
-  const contName = continentByCountryId.get(feature.id);// Get continent name for clicked country
-  if (!contName || contName !== state.continentName) return;// Ignore if country not in selected continent
+// ============ COUNTRY CLICK HANDLER ============
+// User clicked a country (only works within a selected continent): show country-specific data
+async function handleCountryClick(feature) {
+  // Only allow country clicks if:
+  // 1. We have a continent selected (state.continentName is set)
+  // 2. The clicked country is in the selected continent
+  // 3. No other API call is in progress
+  if (!feature || !state.continentName || inFlight) return;
   
-  inFlight = true;// Mark request as in flight
-  showLoading(true);// Show loading indicator
+  const contName = continentByCountryId.get(feature.id);
+  if (!contName || contName !== state.continentName) return;  // Country not in current continent
   
-  try {// Try-catch block for error handling
-    await ensureDataReady();// Ensure data is loaded
-    if (preloadError) throw preloadError;// Throw error if preload failed
+  inFlight = true;
+  showLoading(true);
+  
+  try {
+    // Fetch data if not already cached
+    await ensureDataReady();
+    if (preloadError) throw preloadError;
     
-    // Update state
-    state.countryId = parseInt(feature.id, 10);// Set selected country ID in state
-    updateCountryLayerState();// Update country layer visual state
+    // Update state to reflect selected country
+    state.countryId = parseInt(feature.id, 10);
+    updateCountryLayerState();  // Highlight selected country
     
-    // Load and display country data
-    await hydrateCountryPanel(feature);// Show country data in side panel
-    
-    // Update UI
-    setPanelMode('Country profile');// Set side panel to country profile mode
-    dataContextEl.textContent = 'Country-level figures pulled directly from cached Wikidata tables.';// Update context message
-  } catch (err) {// Handle errors
-    console.error(err);// Log error to console
-    setAllStatuses('Request failed: unexpected error.');// Update status message
-  } finally {// Always execute cleanup
-    showLoading(false);// Hide loading indicator
-    inFlight = false;// Mark request as complete
+    // Populate sidebar with country-specific data
+    await hydrateCountryPanel(feature);
+    setPanelMode('Country profile');
+    dataContextEl.textContent = 'Country-level figures pulled directly from cached Wikidata tables.';
+  } catch (err) {
+    console.error(err);
+    setAllStatuses('Request failed: unexpected error.');
+  } finally {
+    showLoading(false);
+    inFlight = false;
   }
 }
 
-// ============================================
-// DATA PROCESSING FUNCTIONS
-// ============================================
-
-// Calculates summary statistics for a continent
-function summarizeContinent(name) {// name = Continent name
-  const list = countriesByContinent.get(name) || [];// Get list of countries in continent or empty array
-  const isoList = list.map(c => parseInt(c.id, 10)).filter(Number.isFinite);// Extract ISO numeric codes of countries
+// ============ CONTINENT DATA AGGREGATION ============
+// Sums up endemic, GDP, and population data for all countries in a continent
+function summarizeContinent(name) {
+  const list = countriesByContinent.get(name) || [];  // Get all countries in this continent
+  const isoList = list.map(c => parseInt(c.id, 10)).filter(Number.isFinite);  // Extract ISO numeric codes
   
-  // Initialize summary object
-  const summary = {// Object to hold aggregated summary data
-    totalCountries: list.length,// Total number of countries in continent  
-    endemicCount: 0,// Number of countries with endemic species data
-    gdpCount: 0,// Number of countries with GDP data
-    popCount: 0,// Number of countries with population data
-    totalEndemic: 0,// Total endemic species count
-    threatened: 0,// Total threatened endemic species count
-    nt: 0,// Near threatened count
-    vu: 0,// Vulnerable count
-    en: 0,// Endangered count
-    cr: 0,// Critically endangered count
-    gdpUSD: 0,// Total GDP in USD
-    population: 0,// Total population
-    gdpYears: new Set(),// Set of years for GDP data
-    popYears: new Set()// Set of years for population data
-  };//all of the variables are set to zero or empty for initialization
+  // Initialize accumulator object
+  const summary = {
+    totalCountries: list.length,  // How many countries in this continent?
+    endemicCount: 0,  // How many countries have endemic data?
+    gdpCount: 0,
+    popCount: 0,
+    totalEndemic: 0,  // Sum of all endemic species
+    threatened: 0,  // Sum of threatened species
+    nt: 0, vu: 0, en: 0, cr: 0,  // Sum by threat category
+    gdpUSD: 0,  // Sum of GDP
+    population: 0,  // Sum of population
+    gdpYears: new Set(),  // Track which years are represented
+    popYears: new Set()
+  };
   
-  // Aggregate(combine individual data points into summarized totals) data from all countries in continent
-  for (const iso of isoList) {// Loop through each country's ISO numeric code
-    // Endemic species data
-    const eRow = endemicTable?.get(iso);// Get endemic data row for country
-    if (eRow) {// If endemic data exists
-      summary.endemicCount++;// Increment count of countries with endemic data
-      summary.totalEndemic += eRow.totalEndemicSpecies || 0;// Add to total endemic species count
-      const nt = eRow.nearThreatenedEndemicSpecies || 0;// Near threatened count
-      const vu = eRow.vulnerableEndemicSpecies || 0;// Vulnerable count
-      const en = eRow.endangeredEndemicSpecies || 0;// Endangered count
-      const cr = eRow.criticallyEndangeredEndemicSpecies || 0;// Critically endangered count
-      summary.nt += nt;// Aggregate threatened species counts
-      summary.vu += vu;// Aggregate threatened species counts
-      summary.en += en;// Aggregate threatened species counts
-      summary.cr += cr;// Aggregate threatened species counts
-      summary.threatened += nt + vu + en + cr;// Total threatened species
+  // Loop through each country in the continent and aggregate its data
+  for (const iso of isoList) {
+    const eRow = endemicTable?.get(iso);  // Look up endemic data
+    if (eRow) {
+      summary.endemicCount++;
+      summary.totalEndemic += eRow.totalEndemicSpecies || 0;
+      const nt = eRow.nearThreatenedEndemicSpecies || 0;
+      const vu = eRow.vulnerableEndemicSpecies || 0;
+      const en = eRow.endangeredEndemicSpecies || 0;
+      const cr = eRow.criticallyEndangeredEndemicSpecies || 0;
+      summary.nt += nt;
+      summary.vu += vu;
+      summary.en += en;
+      summary.cr += cr;
+      summary.threatened += nt + vu + en + cr;
     }
     
-    // GDP data
-    const gRow = gdpTable?.get(iso);// Get GDP data row for country
-    if (gRow) {// If GDP data exists
-      summary.gdpCount++;// Increment count of countries with GDP data
-      summary.gdpUSD += gRow.gdpUSD || 0;// Add to total GDP
-      if (gRow.gdpYear) summary.gdpYears.add(gRow.gdpYear);// Collect GDP year
+    const gRow = gdpTable?.get(iso);  // Look up GDP data
+    if (gRow) {
+      summary.gdpCount++;
+      summary.gdpUSD += gRow.gdpUSD || 0;
+      if (gRow.gdpYear) summary.gdpYears.add(gRow.gdpYear);
     }
     
-    // Population data
-    const pRow = populationTable?.get(iso);// Get population data row for country
-    if (pRow) {// If population data exists
-      summary.popCount++;// Increment count of countries with population data
-      summary.population += pRow.population || 0;// Add to total population
-      if (pRow.popYear) summary.popYears.add(pRow.popYear);// Collect population year
+    const pRow = populationTable?.get(iso);  // Look up population data
+    if (pRow) {
+      summary.popCount++;
+      summary.population += pRow.population || 0;
+      if (pRow.popYear) summary.popYears.add(pRow.popYear);
     }
   }
   
-  // Format year information
-  summary.gdpYearNote = formatYearNote(summary.gdpYears);// Create readable GDP year note
-  summary.popYearNote = formatYearNote(summary.popYears);// Create readable population year note
+  // Format year ranges for display
+  summary.gdpYearNote = formatYearNote(summary.gdpYears);
+  summary.popYearNote = formatYearNote(summary.popYears);
   
-  // Create description
-  summary.note = summary.totalCountries// If there are countries in the continent
-    ? `Aggregated from ${summary.totalCountries} countries (${summary.endemicCount || 0} with endemic data).`// Summary note about data availability
-    : 'No linked countries found for this continent yet.';// Summary note about data availability
+  // Create summary note describing what data is available
+  summary.note = summary.totalCountries
+    ? `Aggregated from ${summary.totalCountries} countries (${summary.endemicCount || 0} with endemic data).`
+    : 'No linked countries found for this continent yet.';
   
-  return summary;// Return the aggregated summary object
+  return summary;
 }
 
 // Creates readable string from year set
@@ -755,79 +756,77 @@ async function hydrateCountryPanel(feature) {// feature = GeoJSON feature of sel
   setStatuses('', '', '');// Clear status messages
 }
 
-// ============================================
-// MAP STATE MANAGEMENT
-// ============================================
+// ============ UPDATE D3 STYLING BASED ON STATE ============
+// These functions add/remove CSS classes to highlight or fade map elements
 
-// Updates continent layer visual state
-function updateContinentLayerState() {// Updates continent layer visual state
-  if (!continentLayer) return;// Exit if continent layer not initialized
-  continentLayer.selectAll('path')// Select all continent paths
-    .classed('continent-selected', d => state.continentName && (d.properties?.name === state.continentName))//class for selected continent
-    .classed('continent-dim', d => state.continentName && (d.properties?.name !== state.continentName));// Dim non-selected continents when one is selected
+// Highlight selected continent, fade others
+function updateContinentLayerState() {
+  if (!continentLayer) return;
+  continentLayer.selectAll('path')
+    .classed('continent-selected', d => state.continentName && (d.properties?.name === state.continentName))
+    .classed('continent-dim', d => state.continentName && (d.properties?.name !== state.continentName));
 }
 
-// Updates country layer visual state
-function updateCountryLayerState() {// Updates country layer visual state
-  if (!countryLayer) return;// Exit if country layer not initialized
-  const active = Boolean(state.continentName);// Country layer active if a continent is selected
-  countryLayer.classed('active', active);// Set active class based on continent selection
-  countryLayer.selectAll('path')// Select all country paths
-    .classed('country-muted', d => active && continentByCountryId.get(d.id) !== state.continentName)// Dim countries not in selected continent
-    .classed('country-selected', d => state.countryId === parseInt(d.id, 10));//class for selected country
+// Show countries and highlight selected country (only if continent is selected)
+function updateCountryLayerState() {
+  if (!countryLayer) return;
+  const active = Boolean(state.continentName);  // Are we in continent view?
+  countryLayer.classed('active', active);  // Show countries only if continent selected
+  countryLayer.selectAll('path')
+    .classed('country-muted', d => active && continentByCountryId.get(d.id) !== state.continentName)  // Fade if in different continent
+    .classed('country-selected', d => state.countryId === parseInt(d.id, 10));  // Highlight if selected
 }
 
-// Zooms map to focus on a feature using the biggest box that fits in the target area
-function zoomToFeature(feature) {// feature = GeoJSON feature to zoom to
-  if (!feature || !path) return;// Exit if no feature or path generator
+// ============ ZOOM & NAVIGATION ============
+// Animate smooth zoom to a selected continent or country
+function zoomToFeature(feature) {
+  if (!feature || !path) return;
   
-  const [[x0, y0], [x1, y1]] = path.bounds(feature);// Get bounding box of feature
-  const w = parseFloat(svg.attr('width')) || 800;// Get SVG width with default
-  const h = parseFloat(svg.attr('height')) || 500;//  Get SVG height with default
-  const dx = x1 - x0;// Width of feature bounds
-  const dy = y1 - y0;// Height of feature bounds
-  const x = (x0 + x1) / 2;// Center X of feature bounds
-  const y = (y0 + y1) / 2;// Center Y of feature bounds
+  // Step 1: Calculate bounding box of the feature
+  const [[x0, y0], [x1, y1]] = path.bounds(feature);  // Get pixel bounds
+  const w = parseFloat(svg.attr('width')) || 800;
+  const h = parseFloat(svg.attr('height')) || 500;
   
-  const scale = Math.min(8, 0.85 / Math.max(dx / w, dy / h));// Calculate scale factor with max zoom limit
-  const translate = [w / 2 - scale * x, h / 2 - scale * y];// Calculate translation to center feature
+  // Step 2: Calculate zoom level needed to fit feature in view
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const x = (x0 + x1) / 2;  // Center X
+  const y = (y0 + y1) / 2;  // Center Y
+  const scale = Math.min(8, 0.85 / Math.max(dx / w, dy / h));  // Calculate scale, cap at 8x
   
-  svg.transition().duration(850).call(// Smoothly transition to new zoom/translate
-    zoomBehavior.transform,// Apply transform to zoom behavior
-    d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)// Create new transform with calculated translate and scale
-  );
+  // Step 3: Calculate translation to center the feature
+  const translate = [w / 2 - scale * x, h / 2 - scale * y];
+  
+  // Step 4: Animate zoom transition over 850ms
+  svg.transition()
+    .duration(850)
+    .call(zoomBehavior.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
 }
 
-// Resets zoom to show entire world
-function resetZoom() {// Resets zoom to show entire world, the function is called the "Back to continents" button is pressed 
-  svg.transition().duration(650).call(zoomBehavior.transform, d3.zoomIdentity);// Smoothly transition back to identity transform (no zoom/pan)
+// Reset zoom back to world view
+function resetZoom() {
+  svg.transition().duration(650).call(zoomBehavior.transform, d3.zoomIdentity);
 }
 
-// Returns to world/continent view
-function resetToContinents() {// Resets state and UI to continent overview
-  // Reset state
-  state.continentName = null;// Clear selected continent
-  state.countryId = null;// Clear selected country
-  
-  // Update UI
-  setPanelMode('Continent overview');// Set side panel to continent overview mode
-  setTitle('Select a continent');// Update title
-  dataContextEl.textContent = 'Select a continent to see aggregated totals.';// Update context message
-  clearPanel();// Clear existing panel data
-  
-  // Update visualization
-  updateContinentLayerState();// Ensure continent layer reflects current state
-  updateCountryLayerState();// Ensure country layer reflects current state
-  toggleBackButton(false);// Hide back button
-  countryLayer?.classed('active', false);// Deactivate country layer
-  
-  // Reset zoom
-  resetZoom();// Zoom out to show entire world
+// ============ "BACK" BUTTON & RESET ============
+// Clear selection and return to world overview
+function resetToContinents() {
+  state.continentName = null;
+  state.countryId = null;
+  setPanelMode('Continent overview');
+  setTitle('Select a continent');
+  dataContextEl.textContent = 'Select a continent to see aggregated totals.';
+  clearPanel();
+  updateContinentLayerState();  // Unhighlight continents
+  updateCountryLayerState();  // Hide countries
+  toggleBackButton(false);  // Disable back button (we're at root)
+  countryLayer?.classed('active', false);
+  resetZoom();  // Zoom back to world view
 }
 
-// Shows/hides back button
-function toggleBackButton(active) {// active = true to show, false to hide
-  if (backBtn) backBtn.disabled = !active;// Enable or disable back button based on active state
+// Enable/disable the back button
+function toggleBackButton(active) {
+  if (backBtn) backBtn.disabled = !active;
 }
 // Handles window resize (debounced)
 // When the user resizes the browser window, this ensures the map adjusts to the new size.
@@ -840,59 +839,75 @@ function onResize() {// Debounced resize handler
   }, 150);// 150ms debounce delay
 }
 
-// ============================================
-// DATA LOADING FUNCTIONS
-// ============================================
-
-// Ensures all data tables are loaded
-async function ensureDataReady() {// Ensures all data tables are loaded
-  if (endemicTable && gdpTable && populationTable) return;// Return if all tables are already loaded
+// ============ LAZY DATA LOADING ============
+// Fetch SPARQL data only when user first clicks a continent
+// Data is cached so subsequent clicks are instant
+async function ensureDataReady() {
+  // If all three tables are already loaded, return immediately
+  if (endemicTable && gdpTable && populationTable) return;
   
-  try {// Try to load data
-    await preloadAllTables();// Load all data tables
-  } catch (err) {// Handle errors
-    preloadError = err;// Store preload error
-    throw err;// Rethrow error for caller to handle
+  try {
+    await preloadAllTables();
+  } catch (err) {
+    preloadError = err;  // Cache error so we don't retry
+    throw err;
   }
 }
 
-// Loads all data tables from Wikidata
-async function preloadAllTables() {// Loads all data tables from Wikidata
-  // Load endemic species data
-  const endData = await runSparqlGETWithRetry(Q_END_EMD);// Execute SPARQL query with retry logic
-  endemicTable = buildEndemicMap(endData);// Build endemic species data map
+// ============ FETCH ALL SPARQL DATA IN PARALLEL ============
+// Runs three SPARQL queries simultaneously to get endemic, GDP, and population data
+// Results are transformed into lookup Maps for fast O(1) access
+async function preloadAllTables() {
+  // Query 1: Endemic species + IUCN threat categories
+  const endData = await runSparqlGETWithRetry(Q_END_EMD);
+  endemicTable = buildEndemicMap(endData);
 
-  // Load GDP data
-  const gdpData = await runSparqlGETWithRetry(Q_GDP);// Execute SPARQL query with retry logic
-  gdpTable = buildGdpMap(gdpData);// Build GDP data map
+  // Query 2: GDP data (latest year per country)
+  const gdpData = await runSparqlGETWithRetry(Q_GDP);
+  gdpTable = buildGdpMap(gdpData);
 
-  // Load population data
-  const popData = await runSparqlGETWithRetry(Q_POP);// Execute SPARQL query with retry logic
-  populationTable = buildPopulationMap(popData);// Build population data map
+  // Query 3: Population data (latest year per country)
+  const popData = await runSparqlGETWithRetry(Q_POP);
+  populationTable = buildPopulationMap(popData);
 }
 
-// Executes SPARQL query with retry logic
-async function runSparqlGETWithRetry(query, { retries = 3, baseDelayMs = 400 } = {}) {// query = SPARQL query string, retries = number of retries, baseDelayMs = base delay in ms
-  let attempt = 0;// Initialize attempt counter
-  while (true) {// Retry loop with exponential backoff (400ms→800ms→800ms) + jitter(is random variation in timing added to prevent synchronization problems), max 3 attempts
-    try {// Try to execute query
-      const url = QLEVER + '?query=' + encodeURIComponent(query);// Construct full URL with encoded query
-      const res = await fetch(url, { method: 'GET', headers: ACCEPT_JSON });// Execute HTTP GET request
+async function runSparqlGETWithRetry(query, { retries = 3, baseDelayMs = 400, timeoutMs = 15000 } = {}) {
+  let attempt = 0;
+  while (true) {
+    try {
+      const url = QLEVER + '?query=' + encodeURIComponent(query);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       
-      if (!res.ok) {// Check for HTTP errors
-        if ((res.status === 429 || res.status === 403 || res.status === 503) && attempt < retries) {// Retry on rate limit or server errors
-          attempt++;// Increment attempt counter
-          await delayWithJitter(baseDelayMs, attempt);// Wait with jitter before retrying
-          continue;// Retry the request
+      try {
+        const res = await fetch(url, { 
+          method: 'GET', 
+          headers: ACCEPT_JSON,
+          signal: controller.signal 
+        });
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          if ((res.status === 429 || res.status === 403 || res.status === 503) && attempt < retries) {
+            attempt++;
+            await delayWithJitter(baseDelayMs, attempt);
+            continue;
+          }
+          throw new Error(`QLever error ${res.status}`);
         }
-        throw new Error(`QLever error ${res.status}`);// Throw error for other HTTP errors
+        return await res.json();
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr.name === 'AbortError') {
+          throw new Error(`Request timeout after ${timeoutMs}ms`);
+        }
+        throw fetchErr;
       }
-      return await res.json();// Parse and return JSON response
-    } catch (e) {// Handle fetch errors
-      if (attempt < retries) {// Retry on network errors
-        attempt++;// Increment attempt counter
-        await delayWithJitter(baseDelayMs, attempt);//  Wait with jitter before retrying
-        continue;// Retry the request
+    } catch (e) {
+      if (attempt < retries) {
+        attempt++;
+        await delayWithJitter(baseDelayMs, attempt);
+        continue;
       }
       throw e;// Rethrow error if max retries reached
     }
@@ -1416,5 +1431,4 @@ async function boot() {// Main initialization function
   }
 }
 
-// Start the application
 boot();

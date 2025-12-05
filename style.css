@@ -1,259 +1,181 @@
 :root {
-  /* Dark green palette based on your image */
-  --bg:#003a29;         
-  --panel:#014f31;       
-  --panel-dark:#002414; /* ADDED: Darker panel color for depth */
-  --ink:#e9ffee;         
-  --muted:#a5c7af;       
+  /* ============ COLOR PALETTE (Change these to modify whole app colors) ============ */
+      --bg:#003a29;          /* Background (dark green) - Change this to modify overall bg color */
+      --panel:#014f31;       /* Panel/card background (dark green) */
+      --ink:#e9ffee;         /* Text color (light cream) */
+      --muted:#a5c7af;       /* Muted/secondary text (gray-green) */
 
-  --accent:#1E8C45;      
-  --accent-light:#58BB43;
-  --accent-bright:#9BE931; /* FIXED: Removed trailing slash */
-  --accent-lime:#C1FF1C;
-  --accent-strong: #0d7037; 
+      /* ============ ACCENT COLORS (Used for highlights/buttons) ============ */
+      --accent:#1E8C45;      /* Main accent color (medium green) - Change for button colors */
+      --accent-light:#58BB43;  /* Light green for hover states */
+      --accent-bright:#9BE931; /* Bright green highlight */
+      --accent-lime:#C1FF1C;   /* Lime green accent */
 }
 
-* { box-sizing:border-box; }/* Reset box-sizing for all elements */
-html, body {/* Set base styles for html and body */
-  margin:0;/* Remove default margin */
-  height:100%;/* Ensure full height */
-  background:var(--bg);/* Set background color */
-  color:var(--ink);/* Set text color */
-  font-family:Tahoma, Verdana, Geneva, sans-serif;/* Set font family */
-}
+* { box-sizing:border-box; }
+html, body {
+      margin:0;
+      height:100%;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:Tahoma, Verdana, Geneva, sans-serif;
+    }
 
-body {/* Body styles */
-  display:flex;/* Use flexbox for layout */
-  flex-direction:column;/* Stack children vertically */
-  min-height:130vh;/* Ensure minimum height */
-}
+body {
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+    }
 
-a, a:visited { color:var(--accent); text-decoration:none; }/* Link styles */
-a:hover { text-decoration:underline; }/* Link hover styles */
+a, a:visited { color:var(--accent); text-decoration:none; }
+a:hover { text-decoration:underline; }
 
-header {/* Header styles */
-  padding:16px 24px;/* Padding around header */
-  border-bottom:1px solid #0f251c;/* Bottom border */
-  display:flex;/* Use flexbox */
-  flex-direction:column;/* Stack children vertically */
-  align-items:center;/* Center align items */
-  justify-content:center;/* Center justify content */
-  gap:10px;/* Gap between items */
-  background:rgba(0, 28, 21, 0.96);/* Colour of title background */
-  backdrop-filter:blur(10px);/* Blur effect */
-}
+header {
+      padding:16px 24px;
+      border-bottom:1px solid #0f251c;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      background:rgba(0, 28, 21, 0.96);
+      backdrop-filter:blur(10px);
+    }
 
 h1 {
-  margin:0;/* Remove default margin */
-  font-size:26px;/* Set font size */
-  line-height:1.3;/* Set line height */
-  text-align:center;/* Center text */
-}
-/* Main title styles */
-nav { display:flex; gap:12px; justify-content:center; align-items:center; }/* Titles spacing */
-nav a { color:var(--muted); text-decoration:none; font-size:15px; padding:10px 16px; border-radius:999px; border:1px solid transparent; background:transparent; transition:background .2s, color .2s, border-color .2s; }/* Dimensions of title boxes */
-nav a:hover { color:var(--ink); border-color:#1f5a34; background:rgba(31,138,69,0.14); }/* Color of border and back ground of title buttons when hover */
-nav a.active { color:#051913; background:var(--accent); border-color:var(--accent); font-weight:700; }/* Color of selected title */
+      margin:0;
+      font-size:26px;
+      line-height:1.3;
+      text-align:center;
+    }
 
-main { display:flex; flex-direction:column; gap:40px; }/* Improve layout for title in correlation section */
-.hero { padding:48px 24px 32px; background:var(--panel-dark); display:grid; gap:20px; text-align:left; border-bottom:1px solid #0a3c1e; }/* Hero section styles */
-.hero h2 { margin:0; font-size:28px; line-height:1.2; }/* Hero heading styles */
-.hero p { margin:8px 0 0; max-width:640px; color:var(--muted); }/* Hero paragraph styles */
-/* Button styles */
-.btn { border:none; border-radius:999px; padding:10px 20px; font-size:14px; font-weight:600; cursor:pointer; transition:background .2s, color .2s, border .2s; }/* Button dimension */
-.btn-outline { background:transparent; color:var(--ink); border:1px solid var(--accent); }/* Button text color and border color */
-.btn-outline:disabled { opacity:0.4; cursor:not-allowed; }/* Disabled outline button styles */
+    
+nav { display:flex; gap:12px; justify-content:center; align-items:center; }
+nav a { color:var(--muted); text-decoration:none; font-size:15px; padding:10px 16px; border-radius:999px; border:1px solid transparent; background:transparent; transition:background .2s, color .2s, border-color .2s; }
+nav a:hover { color:var(--ink); border-color:#1f5a34; background:rgba(31,138,69,0.14); }
+nav a.active { color:#051913; background:var(--accent); border-color:var(--accent); font-weight:700; }
 
-/* Home and contact section styles */
-.content-card { max-width:960px; margin:24px auto 48px; background:var(--panel); border:1px solid #0f4626; border-radius:18px; padding:24px 28px; color:var(--ink); line-height:1.6; }/*Background of text style and color of title of paragraphs */
-.content-card h3 { margin-top:0; margin-bottom:12px; font-size:22px; }/*Text organisation */
-.content-card h4 { margin:16px 0 8px; font-size:18px; }/*Text organisation */
-.content-card p { margin:8px 0; color:var(--muted); }/*Section paragraph styles */
-.content-card ul { margin:8px 0 12px 20px; color:var(--muted); }/*Section list styles */
-/* Color of paragraph is defined with variable of a initialized color, get rid of the variable and the initialization to change color */
-.app { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(320px,0.85fr); min-height:480px; border-top:1px solid #003a29; border-bottom:1px solid #1e2748; } /* Map app layout with sidebar */
-@media (max-width:960px) { /* Responsive styles for smaller screens */
-  .app { grid-template-columns:1fr; } /* Stack columns vertically on mobile */
-  .sidebar { min-height:360px; border-left:none; border-top:1px solid #0f4626; } /* Adjust sidebar for mobile */
-}
-/* ============================================ */
-/* MAP PAGE BACKGROUND & LAYOUT                 */
-/* ============================================ */
+main { display:flex; flex-direction:column; gap:40px; }
+.hero { padding:48px 24px 32px; background:var(--panel-dark); display:grid; gap:20px; text-align:left; border-bottom:1px solid #0a3c1e; }
+.hero h2 { margin:0; font-size:28px; line-height:1.2; }
+.hero p { margin:8px 0 0; max-width:640px; color:var(--muted); }
+.hero-actions { display:flex; gap:14px; flex-wrap:wrap; margin-top:16px; }
 
-/* Background for map page (and correlations if not excluded) */
-body.map-page,
-body:not(.home):not(.contact-page):not(.viz) {
-  background-image: url("https://www.climate-kic.org/wp-content/uploads/2024/03/INFORMA-Opinion-piece-image.png");
-  background-size: cover; /* Scale image to cover entire element */
-  background-position: center; /* Center the background image */
-  background-repeat: no-repeat; /* Prevent image repetition */
-  background-attachment: fixed; /* Fix background during scrolling */
-  margin: 0; /* Remove default margin */
-}
+.btn { border:none; border-radius:999px; padding:10px 20px; font-size:14px; font-weight:600; cursor:pointer; transition:background .2s, color .2s, border .2s; }
+.btn-primary { background:var(--accent); color:#1E8C45; }
+.btn-primary:hover { background:var(--accent-strong); }
+.btn-outline { background:transparent; color:var(--ink); border:1px solid var(--accent); }
+.btn-outline:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-link { display:inline-flex; align-items:center; gap:6px; color:var(--accent); }
 
-/* Full-screen centering container */
-.map-shell {
-  padding: 0; /* No padding */
-  min-height: 100vh; /* Minimum viewport height */
-  display: flex; /* Enable flexbox layout */
-  align-items: center; /* Center vertically */
-  justify-content: center; /* Center horizontally */
+.home-main { padding-bottom:64px; }
+.home-panels { padding:0 24px 24px; display:grid; gap:24px; }
+.home-panels h3 { margin:0 0 12px; }
+.home-panels p { color:var(--muted); margin:6px 0 0; max-width:720px; }
+.features-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+.feature-card { background:var(--panel); border:1px solid #0f4626; border-radius:16px; padding:18px; }
+.feature-card h4 { margin:0 0 8px; font-size:16px; }
+.feature-card p { margin:0; color:var(--muted); font-size:14px; }
+.content-card { max-width:960px; margin:24px auto 48px; background:var(--panel); border:1px solid #0f4626; border-radius:18px; padding:24px 28px; color:var(--ink); line-height:1.6; }
+.content-card h3 { margin-top:0; margin-bottom:12px; font-size:22px; }
+.content-card h4 { margin:16px 0 8px; font-size:18px; }
+.content-card p { margin:8px 0; color:var(--muted); }
+.content-card ul { margin:8px 0 12px 20px; color:var(--muted); }
+
+.explorer { padding:0 0 32px; }
+.section-heading { display:flex; justify-content:space-between; align-items:flex-start; padding:0 24px 16px; gap:16px; flex-wrap:wrap; }
+.section-heading h3 { margin:0; font-size:20px; }
+.section-heading p { margin:6px 0 0; color:var(--muted); font-size:14px; max-width:560px; }
+
+.app { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(320px,0.85fr); min-height:480px; border-top:1px solid #003a29; border-bottom:1px solid #1e2748; }
+@media (max-width:960px) {
+  .app { grid-template-columns:1fr; }
+  .sidebar { min-height:360px; border-left:none; border-top:1px solid #0f4626; }
 }
 
-/* Main map panel with glass effect */
-.map-panel {
-  width: 100%; /* Full width */
-  max-width: 1400px; /* Maximum width constraint */
-  background: rgba(1, 79, 49, 0.9);      /* 90% opaque dark green */
-  backdrop-filter: blur(12px);           /* Frosted glass effect */
-  border: 1px solid rgba(31, 138, 69, 0.3); /* Semi-transparent border */
-  border-radius: 24px; /* Rounded corners */
-  padding: 10px; /* Internal spacing */
-  margin: 20px; /* External spacing */
-  box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.4), /* Depth shadow */
-    0 0 0 1px rgba(255, 255, 255, 0.05); /* Subtle white outline */
-  overflow: hidden;                      /* Contain zoomed content */
-}
+.map-shell { padding:24px; display:flex; justify-content:center; }
+.map-panel { width:100%; max-width:1300px; background:var(--panel-dark); border:1px solid #0f4626; border-radius:22px; padding:14px; box-shadow:0 12px 30px rgba(0,0,0,0.28); }
+.map-toolbar { display:flex; justify-content:space-between; align-items:center; padding:0 8px 10px; }
+.map-wrap { position:relative; background:transparent; border-radius:16px 0 0 16px; overflow:hidden; }
+.map { width:100%; height:100%; display:block; }
 
-/* Map container with generous height */
-.map-wrap {
-  position: relative; /* Positioning context for child elements */
-  background: transparent; /* No background color */
-  width: 100%; /* Full width */
-  height: 600px;                         /* Generous fixed height */
-  max-height: 75vh;                      /* Responsive maximum */
-  border-radius: 16px 0 0 16px;          /* Rounded left corners */
-  overflow: hidden;                      /* Clip map to bounds */
-}
+.sidebar { background:var(--panel); padding:22px 24px 32px; border-left:1px solid #0f4626; display:flex; flex-direction:column; gap:14px; border-radius:0 16px 16px 0; }
+.panel-label { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:4px; }
+.sidebar h2 { margin:0 0 4px; font-size:22px; }
+.sidebar .small { color:var(--muted); font-size:13px; margin:0; }
+.checklist { padding-left:18px; margin:8px 0; color:var(--muted); font-size:13px; }
+.checklist li { margin-bottom:4px; }
 
-/* SVG map element */
-.map {
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  display: block; /* Block-level display */
-}
+.metric { margin:12px 0; }
+.metric-label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+.metric-value { font-size:22px; margin-top:4px; }
+.status { font-size:12px; color:var(--muted); margin-top:4px; }
+.err { color:#ff9aa2; }
 
-/* Toolbar at top of map */
-.map-toolbar {
-  display: flex; /* Flexbox layout */
-  justify-content: space-between; /* Space items evenly */
-  align-items: center; /* Center align vertically */
-  padding: 0 8px 10px; /* Padding: top 0, sides 8px, bottom 10px */
-}
+.loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; background:transparent; }
+.spinner { width:42px; height:42px; border:4px solid #014f31; border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.tooltip { position:absolute; pointer-events:none; background:#0e1530; color:var(--ink); padding:6px 8px; border:1px solid #1f2a50; border-radius:6px; font-size:12px; box-shadow:0 6px 20px rgba(0,0,0,.25); opacity:0; transition:opacity .15s; }
+.note { margin-top:4px; color:var(--muted); font-size:12px; }
+.legend { margin:10px 0 2px; font-size:12px; color:var(--muted); }
+.attribution { margin-top:8px; font-size:11px; color:var(--muted); }
+.pie-legend { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.pie-legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+.pie-swatch { width:12px; height:12px; border-radius:4px; display:inline-block; border:1px solid rgba(0,0,0,0.25); }
+.chart-tooltip { position:fixed; pointer-events:none; background:#0e1530; color:#e9ffee; padding:8px 10px; border:1px solid #1f2a50; border-radius:6px; font-size:12px; box-shadow:0 6px 20px rgba(0,0,0,.35); opacity:0; transition:opacity .15s; z-index:9999; }
 
-.sidebar { background:var(--panel); padding:22px 24px 32px; border-left:1px solid #0f4626; display:flex; flex-direction:column; gap:14px; border-radius:0 16px 16px 0; overflow-y:auto; max-height:600px; } /* Sidebar styling with scroll if needed */
-.panel-label { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:4px; } /* Panel label styling */
-.sidebar h2 { margin:0 0 4px; font-size:22px; } /* Sidebar text size */
-.sidebar .small { color:var(--muted); font-size:13px; margin:0; } /* Small text in sidebar under the numbers */
-
-/* Metric, text boxes for the side menu of the map */
-.metric { margin:12px 0; display:block !important; visibility:visible !important; opacity:1 !important; } /* CRITICAL FIX: Ensure metrics are visible */
-.metric-label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; display:block; } /* Metric label styling */
-.metric-value { font-size:22px; margin-top:4px; color:var(--ink) !important; display:block; font-weight:600; } /* CRITICAL FIX: Ensure metric values are visible and styled */
-.status { font-size:12px; color:var(--muted); margin-top:4px; } /* Status text styling */
-.err { color:#ff9aa2; } /* Error text color */
-
-.loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; background:transparent; } /* Loading first zoom (overlay) */
-.spinner { width:42px; height:42px; border:4px solid #014f31; border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; } /* Loading spinner */
-@keyframes spin { to { transform:rotate(360deg); } } /* Spinner animation */
-.tooltip { position:absolute; pointer-events:none; padding:6px 8px; border-radius:6px; font-size:12px; box-shadow:0 6px 20px rgba(0,0,0,.25); opacity:0; transition:opacity .15s; border:1px solid; } /* Tooltip base styling */
-.note { margin-top:4px; color:var(--muted); font-size:12px; } /* Note text styling, under population  */
-.legend { margin:10px 0 2px; font-size:12px; color:var(--muted); } /* Legend container of the pie */
-.attribution { margin-top:8px; font-size:11px; color:var(--muted); } /* Attribution text under population */
-.pie-legend { display:flex; flex-direction:column; gap:6px; margin-top:8px; } /* Pie chart legend layout */
-.pie-legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); } /* Pie legend */
-.pie-swatch { width:12px; height:12px; border-radius:4px; display:inline-block; border:1px solid rgba(0,0,0,0.25); } /* Color swatch for legends */
-.chart-tooltip {
-  position: fixed; /* Fixed to viewport, doesn't scroll with page */
-  pointer-events: none; /* Tooltip doesn't interfere with mouse events */
-  background: rgba(0, 58, 41, 1); /* Dark green with 100% opacity (fully opaque) */
-  color: var(--ink); /* Text color using CSS variable for flexibility */
-  padding: 8px 10px; /* 8px top/bottom, 10px left/right inside the tooltip */
-  border: 1px solid #1E8C45; /* Green border matching continent theme */
-  border-radius: 6px; /* Rounded corners for softer appearance */
-  font-size: 12px; /* Small font suitable for tooltips */
-  font-weight: 600; /* Bold text for better readability */
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35); /* White glow shadow: 0px horizontal, 6px vertical, 20px blur, white with 35% opacity */
-  opacity: 0; /* Initially hidden (0 = invisible, 1 = visible). JavaScript controls this. */
-  transition: opacity .15s; /* Smooth fade in/out over 0.15 seconds */
-  z-index: 9999; /* Very high z-index ensures tooltip appears above all other elements */
-}
-/* Tooltip continent */
-.tooltip-continent {
-  background: #003a29; /* Dark green background */
-  color: var(--ink); /* Text color */
-  font-weight: 600; /* Bold text */
-  border-color: #1E8C45; /* Green border */
-}
-/* Tooltip country */
-.tooltip-country {
-  background: #003a29; /* Dark green background */
-  color: var(--ink); /* Text color */
-  font-weight: normal; /* Normal font weight */
-  border-color: #1E8C45; /* Green border */
-}
-
-/* Correlation layout */
-.viz-main { padding:0 24px 60px; display:flex; flex-direction:column; gap:32px; } /* Main correlations container */
-.viz-hero { border-bottom:1px solid #0f4626; } /* Hero section in correlations */
-.viz-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:20px; align-items:start; } /* Grid for correlation cards */
-.viz-card { background:transparent; border:1px solid #0f4626; border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; } /* Correlation card styling */
-.chart-header h3 { margin:0; color:white; font-size:18px; } /* Chart title */
-.chart-header p { margin:4px 0 0; color:var(--muted); font-size:13px; } /* Chart description */
-.chart-wrap svg { width:100%; height:320px; display:block; background:var(--panel-dark); border-radius:14px; } /* Chart container */
-.chart-stats { margin-top:6px; font-size:12px; color:var(--muted); line-height:1.4; } /* Under chart text (Chart statistics) */
-.muted { color:var(--muted); } /* Muted text utility class */
-
-/* Map Styles with Realistic Biome Colors */
-.map-root path { transition:fill .2s, opacity .2s; } /* Smooth transitions for map paths */
-.sphere { fill:#1a3a5f; stroke:#2a4a6f; stroke-width:2; } /* Ocean/water styling */
+/* Correlations layout */
+.viz-main { padding:0 24px 60px; display:flex; flex-direction:column; gap:32px; }
+.viz-hero { border-bottom:1px solid #0f4626; }
+.viz-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:20px; align-items:start; }
+.viz-card { background:var(--panel); border:1px solid #0f4626; border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+.chart-header h3 { margin:0; font-size:18px; }
+.chart-header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+.chart-wrap svg { width:100%; height:320px; display:block; background:var(--panel-dark); border-radius:14px; }
+.chart-stats { margin-top:6px; font-size:12px; color:var(--muted); line-height:1.4; }
+.muted { color:var(--muted); }
+/* ============ MAP STYLING & BIOME COLORS ============ */
+.map-root path { transition:fill .2s, opacity .2s; }
+.sphere { fill:#1a3a5f; stroke:#2a4a6f; stroke-width:1; }  /* Ocean background color */
 
 .continent, .country { 
-  stroke:#1a1a1a; /* Dark border */
-  stroke-width:0.5; /* Thin border */
-  cursor:pointer; /* Pointer cursor on hover */
+  stroke:#000000; 
+  stroke-width:0.5; 
+  cursor:pointer; 
 }
 
 /* Default colors as fallback */
 .continent { fill: #4a7b3d; } /* Default continent color */
 .country { fill: #4a7b3d; } /* Default country color */
 
-/* Continent Colors - Satellite Inspired */
-.continent[data-continent="north-america"] { fill: #3e6b35; } /* North America */
-.continent[data-continent="south-america"] { fill: #2d5a27; } /* South America */
-.continent[data-continent="europe"] { fill: #3e6b35; } /* Europe */
-.continent[data-continent="africa"] { fill: #8a9c5a; } /* Africa */
-.continent[data-continent="asia"] { fill: #3e6b35; } /* Asia */
-.continent[data-continent="oceania"] { fill: #d6bc7a; } /* Oceania */
-.continent[data-continent="antarctica"] { fill: #e8f0f5; } /* Antarctica */
+/* ============ CONTINENT COLORS (Change these to modify continent appearance) ============ */
+.continent[data-continent="north-america"] { fill: #3e6b35; }  /* Change color here */
+.continent[data-continent="south-america"] { fill: #2d5a27; }
+.continent[data-continent="europe"] { fill: #3e6b35; }
+.continent[data-continent="africa"] { fill: #8a9c5a; }
+.continent[data-continent="asia"] { fill: #3e6b35; }
+.continent[data-continent="oceania"] { fill: #d6bc7a; }
+.continent[data-continent="antarctica"] { fill: #e8f0f5; }
 
-/* Country Biome Colors - Satellite Inspired */
-.country[data-biome="desert"] { fill: #d6bc7a; } /* Desert biome */
-.country[data-biome="rainforest"] { fill: #2d5a27; } /* Rainforest biome */
-.country[data-biome="forest"] { fill: #3e6b35; } /* Forest biome */
-.country[data-biome="grassland"] { fill: #8a9c5a; } /* Grassland biome */
-.country[data-biome="tundra"] { fill: #acc7b7; } /* Tundra biome */
-.country[data-biome="ice"] { fill: #ffffff; } /* Ice biome */
-.country[data-biome="mountain"] { fill: #7a7a7a; } /* Mountain biome */
-.country[data-biome="mediterranean"] { fill: #8fa85c; } /* Mediterranean biome */
+/* ============ COUNTRY BIOME COLORS (Change these to modify biome appearance) ============ */
+.country[data-biome="desert"] { fill: #d6bc7a; }       /* Desert color */
+.country[data-biome="rainforest"] { fill: #2d5a27; }  /* Rainforest color (dark green) */
+.country[data-biome="forest"] { fill: #3e6b35; }      /* Forest color (medium green) */
+.country[data-biome="grassland"] { fill: #8a9c5a; }   /* Grassland/Savanna color (light green) */
+.country[data-biome="tundra"] { fill: #acc7b7; }      /* Tundra color (gray-green) */
+.country[data-biome="ice"] { fill: #ffffff; }         /* Ice/Polar color (white) */
+.country[data-biome="mountain"] { fill: #7a7a7a; }    /* Mountain color (gray) */
+.country[data-biome="mediterranean"] { fill: #8fa85c; } /* Mediterranean color */
 
-/* Hover and selection states */
+/* ============ HOVER & SELECTION STATES ============ */
 .continent:hover, .country:hover { 
-  fill:#fefefe !important; /* Light teal on hover */
-  filter: brightness(1.1); /* Slightly brighten */
+  fill:#6fb1a0 !important;  /* Color when hovering over a region */
+  filter: brightness(1.1); 
 }
-/* Target the path elements inside the SVG */
-.map path.continent-selected {/* Selected continent styles */
-  stroke: #ffffff !important;
-  stroke-width: 0.1 !important;
-  stroke-opacity: 1 !important;
-}
-
-.map path.country-selected {/* Selected country styles */
-  stroke: #ffffff !important; 
-  stroke-width: 2 !important;
-  stroke-opacity: 1 !important;
+.continent-selected, .country-selected { 
+  fill:#2f6393 !important;  /* Color when selected/clicked */
+  stroke:#7ba3ff; 
+  stroke-width:1.5; 
 }
 
 /* Countries are visible but not interactive until continent is selected */

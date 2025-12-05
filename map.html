@@ -1,52 +1,61 @@
-<!DOCTYPE html> <!-- Declares this as an HTML5 document - must be first line -->
-<html lang="en"> <!-- Root element, sets page language to English for accessibility -->
-<head> <!-- Container for metadata - not visible to users -->
-  <meta charset="utf-8" /> <!-- Specifies UTF-8 character encoding for international text support -->
-  <title>Interactive Map · Endemic Species & Economy Explorer</title> <!-- Text shown in browser tabs and search results -->
-  <meta name="viewport" content="width=device-width, initial-scale=1" /> <!-- Makes page responsive on mobile devices -->
-  <link rel="stylesheet" href="style.css" /> <!-- Links external CSS stylesheet for page styling -->
-</head> <!-- End of metadata section -->
-<body class="map-page"> <!-- Start of visible content, 'map-page' class for page-specific styling -->
-  <!-- Page header with main title and navigation -->
-  <header> <!-- Semantic element for introductory content -->
-    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1> <!-- Main page heading (H1) -->
-    <nav> <!-- Semantic element for navigation links -->
-      <a href="index.html">Home</a> <!-- Link to homepage -->
-      <a href="map.html" class="active">Interactive map</a> <!-- Link to current page with 'active' class for highlighting -->
-      <a href="correlations.html">Correlations</a> <!-- Link to correlations page -->
-      <a href="contact.html">Contact</a> <!-- Link to contact page -->
-    </nav> <!-- End of navigation -->
-  </header> <!-- End of header -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Interactive Map · Endemic Species & Economy Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <!-- Header + nav shared across pages; sets context before the interactive map. -->
+    <h1>Investigating Socioeconomic Impact on Species Endangerment</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="map.html" class="active">Interactive map</a>
+      <a href="correlations.html">Correlations</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
 
-  <!-- Main content area of the page -->
-  <main class="map-shell"> <!-- Semantic main content, 'map-shell' class for styling -->
-    <div class="map-panel"> <!-- Container for the entire map interface -->
-      <!-- Toolbar with mode indicator and navigation button -->
-      <div class="map-toolbar"> <!-- Container for map controls -->
-        <span class="panel-label" id="panelMode">Continent overview</span> <!-- Shows current view mode, 'panelMode' ID for JS updates -->
-        <button class="btn btn-outline" id="backToWorld" disabled>Back to continents</button> <!-- Navigation button, initially disabled -->
-      </div> <!-- End of toolbar -->
-      
-      <!-- Two-column layout: map on left, data panel on right -->
-      <div class="app"> <!-- Flex container for side-by-side layout -->
-        <!-- Left column: Map visualization area -->
-        <div class="map-wrap"> <!-- Container for the map and its related elements -->
-          <svg class="map"></svg> <!-- Empty SVG element where D3.js will draw the interactive map -->
-          <div class="loading" id="loading" aria-hidden="true" style="display:none;"><div class="spinner"></div></div> <!-- Loading spinner, hidden by default -->
-          <div class="tooltip" id="tooltip"></div> <!-- Tooltip element for hover information, empty initially -->
-          <!-- Biome color legend explaining map colors -->
-          <div class="biome-legend"> <!-- Container for biome color key -->
-            <h4>Biome colors</h4> <!-- Legend title -->
-            <div class="biome-item"><div class="biome-color biome-forest"></div><span>Forest</span></div> <!-- Forest biome with color swatch -->
-            <div class="biome-item"><div class="biome-color biome-rainforest"></div><span>Rainforest</span></div> <!-- Rainforest biome -->
-            <div class="biome-item"><div class="biome-color biome-grassland"></div><span>Grassland/Savanna</span></div> <!-- Grassland biome -->
-            <div class="biome-item"><div class="biome-color biome-desert"></div><span>Desert</span></div> <!-- Desert biome -->
-            <div class="biome-item"><div class="biome-color biome-tundra"></div><span>Tundra</span></div> <!-- Tundra biome -->
-            <div class="biome-item"><div class="biome-color biome-ice"></div><span>Ice/Polar</span></div> <!-- Ice/Polar biome -->
-            <div class="biome-item"><div class="biome-color biome-mountain"></div><span>Mountain</span></div> <!-- Mountain biome -->
-            <div class="biome-item"><div class="biome-color biome-mediterranean"></div><span>Mediterranean</span></div> <!-- Mediterranean biome -->
-          </div> <!-- End of biome legend -->
-        </div> <!-- End of map-wrap -->
+  <main class="map-shell">
+    <!-- Layout overview: SVG map workspace on the left, data/metrics sidebar on the right. -->
+    <div class="map-panel">
+      <div class="map-toolbar">
+        <span class="panel-label" id="panelMode">Continent overview</span>
+        <button class="btn btn-outline" id="backToWorld" disabled>Back to continents</button>
+      </div>
+      <div class="app">
+        <div class="map-wrap">
+          <svg class="map"></svg>
+          <div class="loading" id="loading" aria-hidden="true" style="display:none;"><div class="spinner"></div></div>
+          <div class="tooltip" id="tooltip"></div>
+          <div class="biome-legend">
+            <h4>Biome colors</h4>
+            <div class="biome-item"><div class="biome-color biome-forest"></div><span>Forest</span></div>
+            <div class="biome-item"><div class="biome-color biome-rainforest"></div><span>Rainforest</span></div>
+            <div class="biome-item"><div class="biome-color biome-grassland"></div><span>Grassland/Savanna</span></div>
+            <div class="biome-item"><div class="biome-color biome-desert"></div><span>Desert</span></div>
+            <div class="biome-item"><div class="biome-color biome-tundra"></div><span>Tundra</span></div>
+            <div class="biome-item"><div class="biome-color biome-ice"></div><span>Ice/Polar</span></div>
+            <div class="biome-item"><div class="biome-color biome-mountain"></div><span>Mountain</span></div>
+            <div class="biome-item"><div class="biome-color biome-mediterranean"></div><span>Mediterranean</span></div>
+          </div>
+        </div>
+        <aside class="sidebar">
+          <h2 id="country-title">Click a country</h2>
+          <p class="small" id="dataContext">The panel will show:</p>
+          
+
+          <div class="metric">
+            <div class="metric-label">Total endemic species</div>
+            <div class="metric-value" id="totalEndemic">—</div>
+            <div class="status" id="endemicStatus"></div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Threatened endemic species</div>
+            <div class="metric-value" id="endangeredEndemic">—</div>
+          </div>
 
         <!-- Right column: Data information panel -->
         <aside class="sidebar"> <!-- Semantic element for supplementary content -->
@@ -95,9 +104,9 @@
     </div> <!-- End of map-panel -->
   </main> <!-- End of main content -->
 
-  <!-- External JavaScript libraries and custom script -->
-  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script> <!-- D3.js visualization library -->
-  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script> <!-- TopoJSON for geographic data -->
-  <script src="map.js"></script> <!-- Your custom JavaScript for map interactivity -->
-</body> <!-- End of visible content -->
-</html> <!-- End of HTML document -->
+  <!-- External assets: D3 for rendering and interactions, TopoJSON for map data conversion, map.js for all map logic and SPARQL data loading. -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+  <script src="map.js"></script>
+</body>
+</html>

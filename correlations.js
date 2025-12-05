@@ -1,18 +1,20 @@
-const QLEVER = 'https://qlever.dev/api/wikidata';                                   // SPARQL endpoint URL
-const ACCEPT_JSON = { 'Accept': 'application/sparql-results+json' };                // HTTP headers for JSON response
-const MIN_ENDEMIC = 50;                                                             // Minimum endemic species count filter
+// ============ CONFIGURATION & DATA SOURCES ============
+const QLEVER = 'https://qlever.dev/api/wikidata';  // SPARQL endpoint
+const ACCEPT_JSON = { 'Accept': 'application/sparql-results+json' };  // Request JSON
+const MIN_ENDEMIC = 50;  // Filter: only countries with ≥50 endemic species
 
-const statusEl = document.getElementById('vizStatus');                              // Status display element reference
-const tooltip = document.getElementById('vizTooltip');                              // Tooltip element reference
-const fmtInt = d3.format(',d');                                                     // D3 number formatter with commas
+// ============ DOM ELEMENTS ============
+const statusEl = document.getElementById('vizStatus');  // Status message
+const tooltip = document.getElementById('vizTooltip');  // Hover tooltip
+const fmtInt = d3.format(',d');  // Number formatter
 
-async function initCorrelations() {                                                 // Main initialization function
-  setStatus('Loading live data from QLever…');                                      // Update loading status
-  try {                                                                             // Try block for error handling
-    const [endData, gdpData, popData] = await Promise.all([                         // Fetch all datasets in parallel
-      runSparqlGETWithRetry(Q_END_EMD),                                             // Endemic species data
-      runSparqlGETWithRetry(Q_GDP),                                                 // GDP data
-      runSparqlGETWithRetry(Q_POP)                                                  // Population data
+async function initCorrelations() {
+  setStatus('Loading live data from QLever…');
+  try {
+    const [endData, gdpData, popData] = await Promise.all([
+      runSparqlGETWithRetry(Q_END_EMD),
+      runSparqlGETWithRetry(Q_GDP),
+      runSparqlGETWithRetry(Q_POP)
     ]);
     const endemicTable = buildEndemicMap(endData);                                  // Parse endemic data to Map
     const gdpTable = buildGdpMap(gdpData);                                          // Parse GDP data to Map
@@ -138,56 +140,56 @@ function renderScatter(cfg, data) {                                             
     { x: x.domain()[1], y: regression.intercept + regression.slope * x.domain()[1] } // End at max x
   ];
 
-  group.append('g')                                                                 // Add x-axis
-    .attr('transform', `translate(0,${height - margin.bottom})`)                    // Position at bottom
-    .call(d3.axisBottom(x))                                                         // Create axis
-    .call(g => g.selectAll('text').attr('fill', '#a8b3c7').style('font-size', '11px')) // Style text
-    .call(g => g.selectAll('line,path').attr('stroke', '#27335c'));                 // Style lines
+  group.append('g')
+    .attr('transform', `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x))
+    .call(g => g.selectAll('text').attr('fill', '#a8b3c7').style('font-size', '11px'))
+    .call(g => g.selectAll('line,path').attr('stroke', '#27335c'));
 
-  group.append('g')                                                                 // Add y-axis
-    .attr('transform', `translate(${margin.left},0)`)                               // Position at left
-    .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format('.0%')))                     // Create axis with % format
-    .call(g => g.selectAll('text').attr('fill', '#a8b3c7').style('font-size', '11px')) // Style text
-    .call(g => g.selectAll('line,path').attr('stroke', '#27335c'));                 // Style lines
+  group.append('g')
+    .attr('transform', `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format('.0%')))
+    .call(g => g.selectAll('text').attr('fill', '#a8b3c7').style('font-size', '11px'))
+    .call(g => g.selectAll('line,path').attr('stroke', '#27335c'));
 
-  group.append('text')                                                              // Add x-axis label
-    .attr('x', width / 2)                                                           // Center horizontally
-    .attr('y', height - 18)                                                         // Position above axis
-    .attr('text-anchor', 'middle')                                                  // Center text
-    .attr('fill', '#a8b3c7')                                                        // Text color
-    .attr('font-size', 12)                                                          // Font size
-    .text(xLabel);                                                                  // Label text
+  group.append('text')
+    .attr('x', width / 2)
+    .attr('y', height - 18)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#a8b3c7')
+    .attr('font-size', 12)
+    .text(xLabel);
 
-  group.append('text')                                                              // Add y-axis label
-    .attr('transform', 'rotate(-90)')                                               // Rotate 90° counterclockwise
-    .attr('x', -height / 2)                                                         // Center vertically
-    .attr('y', 20)                                                                  // Position left of axis
-    .attr('text-anchor', 'middle')                                                  // Center text
-    .attr('fill', '#a8b3c7')                                                        // Text color
-    .attr('font-size', 12)                                                          // Font size
-    .text('Endangered / total endemic');                                            // Label text
+  group.append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -height / 2)
+    .attr('y', 20)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#a8b3c7')
+    .attr('font-size', 12)
+    .text('Endangered / total endemic');
 
-  group.selectAll('circle')                                                         // Create data points
-    .data(filtered)                                                                 // Bind data
-    .join('circle')                                                                 // Create/update circles
-    .attr('cx', d => x(d.x))                                                        // x-position
-    .attr('cy', d => y(d.y))                                                        // y-position
-    .attr('r', 5)                                                                   // Radius
-    .attr('fill', '#74c0ff')                                                        // Blue color
-    .attr('opacity', 0.9)                                                           // Slight transparency
-    .on('mouseenter', (event, d) => showTooltip(event, d, cfg, svg.node()))         // Show tooltip on hover
-    .on('mousemove', (event, d) => showTooltip(event, d, cfg, svg.node()))          // Update tooltip position
-    .on('mouseleave', hideTooltip);                                                 // Hide tooltip
+  group.selectAll('circle')
+    .data(filtered)
+    .join('circle')
+    .attr('cx', d => x(d.x))
+    .attr('cy', d => y(d.y))
+    .attr('r', 5)  // Circle radius (change to increase dot size)
+    .attr('fill', '#74c0ff')  // Circle color (change to different color, e.g., '#ff6b6b' for red)
+    .attr('opacity', 0.9)  // Transparency (0 = invisible, 1 = opaque)
+    .on('mouseenter', (event, d) => showTooltip(event, d, cfg, svg.node()))
+    .on('mousemove', (event, d) => showTooltip(event, d, cfg, svg.node()))
+    .on('mouseleave', hideTooltip);
 
-  group.append('line')                                                              // Add regression line
-    .attr('x1', x(linePoints[0].x))                                                 // Start x
-    .attr('y1', y(linePoints[0].y))                                                 // Start y
-    .attr('x2', x(linePoints[1].x))                                                 // End x
-    .attr('y2', y(linePoints[1].y))                                                 // End y
-    .attr('stroke', '#f6c177')                                                      // Orange color
-    .attr('stroke-width', 2);                                                       // Line thickness
+  group.append('line')
+    .attr('x1', x(linePoints[0].x))
+    .attr('y1', y(linePoints[0].y))
+    .attr('x2', x(linePoints[1].x))
+    .attr('y2', y(linePoints[1].y))
+    .attr('stroke', '#f6c177')  // Trend line color (change to different color)
+    .attr('stroke-width', 2);  // Trend line thickness
 
-  writeStats(cfg.statsId, regression, filtered.length);                             // Display regression statistics
+  writeStats(cfg.statsId, regression, filtered.length);
 }
 
 function showTooltip(event, datum, cfg, svgNode) {                                  // Show tooltip on hover
