@@ -143,14 +143,14 @@ function renderScatter(cfg, data) {                                             
   group.append('g')
     .attr('transform', `translate(0,${height - margin.bottom})`)
     .call(d3.axisBottom(x))
-    .call(g => g.selectAll('text').attr('fill', '#a8b3c7').style('font-size', '11px'))
-    .call(g => g.selectAll('line,path').attr('stroke', '#27335c'));
+    .call(g => g.selectAll('text').attr('fill', '#ffffffff').style('font-size', '11px'))
+    .call(g => g.selectAll('line,path').attr('stroke', '#275c32ff'));
 
   group.append('g')
     .attr('transform', `translate(${margin.left},0)`)
     .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format('.0%')))
-    .call(g => g.selectAll('text').attr('fill', '#a8b3c7').style('font-size', '11px'))
-    .call(g => g.selectAll('line,path').attr('stroke', '#27335c'));
+    .call(g => g.selectAll('text').attr('fill', '#ffffffff').style('font-size', '11px'))
+    .call(g => g.selectAll('line,path').attr('stroke', '#275c2aff'));
 
   group.append('text')
     .attr('x', width / 2)
@@ -175,7 +175,7 @@ function renderScatter(cfg, data) {                                             
     .attr('cx', d => x(d.x))
     .attr('cy', d => y(d.y))
     .attr('r', 5)  // Circle radius (change to increase dot size)
-    .attr('fill', '#74c0ff')  // Circle color (change to different color, e.g., '#ff6b6b' for red)
+    .attr('fill', '#8bff74ff')  // Circle color 
     .attr('opacity', 0.9)  // Transparency (0 = invisible, 1 = opaque)
     .on('mouseenter', (event, d) => showTooltip(event, d, cfg, svg.node()))
     .on('mousemove', (event, d) => showTooltip(event, d, cfg, svg.node()))
