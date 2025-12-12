@@ -176,7 +176,7 @@ function renderScatter(cfg, data) {
     .attr('x', width / 2)
     .attr('y', height - 18)
     .attr('text-anchor', 'middle')
-    .attr('fill', '#a8b3c7')
+    .attr('fill', '#ffffffff')
     .attr('font-size', 12)
     .text(xLabel);                                               // Use the label chosen by chooseScale
 
@@ -185,7 +185,7 @@ function renderScatter(cfg, data) {
     .attr('x', -height / 2)
     .attr('y', 20)
     .attr('text-anchor', 'middle')
-    .attr('fill', '#a8b3c7')
+    .attr('fill', '#ffffffff')
     .attr('font-size', 12)
     .text('Endangered / total endemic');                         // Fixed Y-axis label
 
