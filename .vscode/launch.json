@@ -12,4 +12,4 @@
             "webRoot": "${workspaceFolder}"
         }
     ]
-}
+}//sets up and launches a local development website in Visual Studio Code.
