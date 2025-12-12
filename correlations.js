@@ -156,7 +156,7 @@ function renderScatter(cfg, data) {                                             
     .attr('x', width / 2)
     .attr('y', height - 18)
     .attr('text-anchor', 'middle')
-    .attr('fill', '#a8b3c7')
+    .attr('fill', '#ffffffff')
     .attr('font-size', 12)
     .text(xLabel);
 
@@ -165,7 +165,7 @@ function renderScatter(cfg, data) {                                             
     .attr('x', -height / 2)
     .attr('y', 20)
     .attr('text-anchor', 'middle')
-    .attr('fill', '#a8b3c7')
+    .attr('fill', '#ffffffff')
     .attr('font-size', 12)
     .text('Endangered / total endemic');
 
@@ -204,11 +204,11 @@ function showTooltip(event, datum, cfg, svgNode) {                              
   const maxTop = window.innerHeight - 120;                                          // Prevent going off bottom edge
   tooltip.style.left = `${Math.min(left, maxLeft)}px`;                              // Set left position
   tooltip.style.top = `${Math.min(top, maxTop)}px`;                                 // Set top position
-  tooltip.innerHTML = `                                                             // Set tooltip content
-    <strong>${datum.countryLabel}</strong><br>                                      // Country name
-    Threatened fraction: ${(datum.y * 100).toFixed(1)}%<br>                         // Threatened percentage
-    ${cfg.tooltipLabel || cfg.xLabel}: ${cfg.tooltipFmt(datum)}<br>                 // GDP/Population value
-    Total endemic: ${fmtInt(datum.totalEndemic)} | Threatened: ${fmtInt(datum.threatenedEndemic)} // Species counts
+  tooltip.innerHTML = `                                                             
+    <strong>${datum.countryLabel}</strong><br>                                      
+    Threatened fraction: ${(datum.y * 100).toFixed(1)}%<br>                         
+    ${cfg.tooltipLabel || cfg.xLabel}: ${cfg.tooltipFmt(datum)}<br>                 
+    Total endemic: ${fmtInt(datum.totalEndemic)} | Threatened: ${fmtInt(datum.threatenedEndemic)} 
   `;
 }
 
@@ -225,13 +225,13 @@ function writeStats(targetId, regression, n) {                                  
   const intercept = regression.intercept?.toFixed(4) || '0';                        // Format intercept to 4 decimals
   const r = regression.r?.toFixed(3) || '0';                                        // Format correlation coefficient to 3 decimals
   const r2 = regression.r2?.toFixed(3) || '0';                                      // Format R-squared to 3 decimals
-  el.innerHTML = `                                                                  // Set HTML content
-    <p><strong>Linear regression</strong> (y = a·x + b)</p>                         // Title
-    <p>n = ${n}</p>                                                                 // Sample size
-    <p>a (slope) ≈ ${slope}</p>                                                     // Slope
-    <p>b (intercept) ≈ ${intercept}</p>                                             // Intercept
-    <p>r ≈ ${r}</p>                                                                 // Correlation coefficient
-    <p>R² ≈ ${r2}</p>                                                               // Coefficient of determination
+  el.innerHTML = `                                                                  
+    <p><strong>Linear regression</strong> (y = a·x + b)</p>                         
+    <p>n = ${n}</p>                                                                
+    <p>a (slope) ≈ ${slope}</p>                                               
+    <p>b (intercept) ≈ ${intercept}</p>                                    
+    <p>r ≈ ${r}</p>                                                                
+    <p>R² ≈ ${r2}</p>                                                             
   `;
 }
 
